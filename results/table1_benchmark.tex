@@ -1,0 +1,13 @@
+\begin{tabular}{llll}
+\toprule
+Model & CI$\uparrow$ & MSE$\downarrow$ & Notes \\
+\midrule
+DeepDTA-iBAM & 0.834 & 0.246 & Integrated model (this work) \\
+DeepDTA & 0.863 & 0.194 & Sequence CNN baseline \\
+WideDTA & 0.875 & 0.179 & Motif-enhanced CNN \\
+GraphDTA (GAT-GCN) & 0.891 & 0.139 & Graph neural network baseline \\
+DGraphDTA & 0.904 & 0.126 & Distance-aware graph attention \\
+MGraphDTA & 0.902 & 0.128 & Multiscale graph model \\
+HMM-DTA & 0.903 & 0.135 & Protein and molecule language models \\
+\bottomrule
+\end{tabular}

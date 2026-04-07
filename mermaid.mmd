@@ -1,0 +1,58 @@
+---
+config:
+  layout: elk
+  theme: neutral
+  look: neo
+---
+flowchart TB
+ subgraph Training_and_Evaluation["Training and Evaluation Protocol"]
+        R["KIBA Standard Split<br>Benchmark Reference"]
+        S["Scaffold Split<br>Generalization Stress Test"]
+        T["Ablation: No-Fusion Setting<br>Cross-Attention Removed"]
+  end
+    A@{ label: "<span style=\"font-weight:\">Ligand Input<br><span style=\"font-weight:\">SMILES Representation</span></span>" } --> B["RDKit Graph Construction<br>Atom &amp; Bond<br>Feature Extraction"]
+    C@{ label: "<span style=\"font-weight:\">Protein Input<br>Amino Acid Sequence</span>" } --> D["Protein Embedding<br>Cache Builder<br>ESM-C Residue Embeddings"]
+    B --> E["MolecularGAT Ligand Encoder<br>Token-Preserving<br>Graph Attention"]
+    D --> F["Protein Adapter Module<br>Masked Residue Projection"]
+    E --> G["Ligand Token Sequence<br>Atom Embeddings +<br>Graph Summary"]
+    F --> H["Protein Token Sequence<br>Residue Embeddings +<br>Protein Summary"]
+    G --> I["Bidirectional<br>Cross-Attention Fusion<br>Ligand↔Target Attention"] & K["Global Ligand Summary"] & N["Diffusion Auxiliary Head<br>Protein-Conditioned<br>Node Denoising"]
+    H --> I & L["Global Protein Summary"]
+    I --> J["Fused Multimodal Summary"] & P["<b>Interpretable iBAM<br>Atom–Residue<br>Attention Heatmaps</b>"]
+    J --> M["Affinity Prediction Head<br>KIBA Regression"]
+    K --> M
+    L --> M & N
+    M --> O["<b>Predicted Affinity<br>CI, RMSE, MAE Evaluation</b>"] & Training_and_Evaluation
+    N --> Q["Seed-Based Analog Generation<br>Topology-Preserving Decoding"]
+    Q --> U["Medicinal Chemistry Filtering<br>QED, SA, Lipinski, Alerts"]
+    U --> V["<b>Generated Compound Ranking<br>Predicted Target Affinity</b>"]
+
+    A@{ shape: rect}
+    C@{ shape: rect}
+     R:::eval
+     S:::eval
+     T:::eval
+     A:::input
+     B:::process
+     C:::input
+     D:::process
+     E:::model
+     F:::model
+     G:::process
+     H:::process
+     I:::model
+     K:::process
+     N:::model
+     L:::process
+     J:::process
+     P:::output
+     M:::model
+     O:::output
+     Q:::output
+     U:::process
+     V:::output
+    classDef input fill:#D4E9FF,stroke:#1E70BF,stroke-width:1px,color:#000,font-weight:bold
+    classDef process fill:#EAF7EA,stroke:#3A873A,stroke-width:1px,color:#000
+    classDef model fill:#FFF3D1,stroke:#D29400,stroke-width:1px,color:#000
+    classDef output fill:#FFE0E0,stroke:#C64646,stroke-width:1px,color:#000
+    classDef eval fill:#E8E8E8,stroke:#7A7A7A,stroke-width:1px,color:#000,font-style:italic

@@ -1,0 +1,8 @@
+model,CI,MSE,notes,source_url
+DeepDTA-iBAM,0.834,0.246,Integrated model (this work),results/max_rmse_cluster_diffusion_member1_standard_eval.json
+DeepDTA,0.863,0.194,Sequence CNN baseline,https://academic.oup.com/bioinformatics/article/34/17/i821/5093245
+WideDTA,0.875,0.179,Motif-enhanced CNN,https://arxiv.org/abs/1902.04166
+GraphDTA (GAT-GCN),0.891,0.139,Graph neural network baseline,https://academic.oup.com/bioinformatics/article/37/8/1140/5942970
+DGraphDTA,0.904,0.126,Distance-aware graph attention,https://pubs.rsc.org/en/content/articlelanding/2020/ra/d0ra02297g
+MGraphDTA,0.902,0.128,Multiscale graph model,https://pubs.rsc.org/en/content/articlelanding/2022/sc/d1sc05180f
+HMM-DTA,0.903,0.135,Protein and molecule language models,https://doi.org/10.1186/s13321-025-01146-6

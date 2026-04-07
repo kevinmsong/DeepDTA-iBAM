@@ -1,0 +1,42 @@
+[
+  {
+    "pdb_id": "6YOJ",
+    "ligand_resname": "P4N",
+    "protein_name": "FAK1",
+    "ligand_name": "P4N (dasatinib analog)",
+    "contact_cutoff_angstrom": 4.5,
+    "notes": "P4N-FAK1 co-crystal, established iBAM case study"
+  },
+  {
+    "pdb_id": "4WKQ",
+    "ligand_resname": "AEE",
+    "protein_name": "EGFR",
+    "ligand_name": "erlotinib analog",
+    "contact_cutoff_angstrom": 4.5,
+    "notes": "EGFR kinase domain with ATP-competitive inhibitor"
+  },
+  {
+    "pdb_id": "2HYY",
+    "ligand_resname": "STI",
+    "protein_name": "ABL1",
+    "ligand_name": "imatinib (STI571)",
+    "contact_cutoff_angstrom": 4.5,
+    "notes": "ABL1 with imatinib, well-characterized binding interface"
+  },
+  {
+    "pdb_id": "1KE6",
+    "ligand_resname": "STA",
+    "protein_name": "CDK2",
+    "ligand_name": "staurosporine",
+    "contact_cutoff_angstrom": 4.5,
+    "notes": "CDK2 with staurosporine, canonical kinase hinge binder"
+  },
+  {
+    "pdb_id": "4RJ3",
+    "ligand_resname": "B96",
+    "protein_name": "VEGFR2",
+    "ligand_name": "sorafenib analog",
+    "contact_cutoff_angstrom": 4.5,
+    "notes": "VEGFR2 kinase domain with DFG-out inhibitor"
+  }
+]

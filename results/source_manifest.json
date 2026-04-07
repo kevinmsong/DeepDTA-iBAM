@@ -1,0 +1,105 @@
+{
+  "generated_at_unix": 1774842081,
+  "sources": [
+    {
+      "key": "p4n_chemcomp",
+      "url": "https://data.rcsb.org/rest/v1/core/chemcomp/P4N",
+      "note": "RCSB chemical component descriptor for P4N."
+    },
+    {
+      "key": "fak1_p4n_literature",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12606203/",
+      "note": "Structure-based FAK1-P4N analysis used in the iBAM caption."
+    },
+    {
+      "key": "h1_sequence",
+      "url": "https://rest.uniprot.org/uniprotkb/P35367.fasta",
+      "note": "UniProt FASTA sequence for the human H1 receptor."
+    },
+    {
+      "key": "egfr_sequence",
+      "url": "https://rest.uniprot.org/uniprotkb/P00533.fasta",
+      "note": "UniProt FASTA sequence for human EGFR."
+    },
+    {
+      "key": "dasatinib_query",
+      "url": "https://www.ebi.ac.uk/chembl/api/data/molecule/search.json?q=Dasatinib",
+      "note": "ChEMBL query used to recover the dasatinib seed compound."
+    },
+    {
+      "key": "benchmark_deepdta",
+      "url": "https://academic.oup.com/bioinformatics/article/34/17/i821/5093245",
+      "note": "Primary DeepDTA benchmark source."
+    },
+    {
+      "key": "benchmark_widedta",
+      "url": "https://arxiv.org/abs/1902.04166",
+      "note": "WideDTA benchmark source."
+    },
+    {
+      "key": "benchmark_graphdta",
+      "url": "https://academic.oup.com/bioinformatics/article/37/8/1140/5942970",
+      "note": "Primary GraphDTA benchmark source covering GCN, GAT, and GIN variants."
+    },
+    {
+      "key": "benchmark_transformercpi",
+      "url": "https://academic.oup.com/bioinformatics/article/36/16/4406/5840724",
+      "note": "Primary TransformerCPI benchmark source."
+    },
+    {
+      "key": "benchmark_moltrans",
+      "url": "https://academic.oup.com/bioinformatics/article/37/6/830/5942970",
+      "note": "Primary MolTrans benchmark source."
+    },
+    {
+      "key": "benchmark_hyperattentiondti",
+      "url": "https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-022-04634-1",
+      "note": "Primary HyperAttentionDTI benchmark source."
+    },
+    {
+      "key": "benchmark_mgraphdta",
+      "url": "https://pubs.rsc.org/en/content/articlehtml/2022/sc/d1sc05180f",
+      "note": "Primary MGraphDTA benchmark source."
+    },
+    {
+      "key": "h1_sequence",
+      "url": "https://rest.uniprot.org/uniprotkb/P35367.fasta",
+      "note": "UniProt FASTA sequence for human H1 receptor."
+    },
+    {
+      "key": "h1_sequence",
+      "url": "https://rest.uniprot.org/uniprotkb/P35367.fasta",
+      "note": "UniProt FASTA sequence for human H1 receptor."
+    },
+    {
+      "key": "h1_target",
+      "url": "https://www.ebi.ac.uk/chembl/api/data/target/search.json?q=Histamine%20H1%20receptor",
+      "note": "ChEMBL target lookup for human H1 receptor."
+    },
+    {
+      "key": "h1_activity",
+      "url": "https://www.ebi.ac.uk/chembl/api/data/activity.json?target_chembl_id=CHEMBL231&assay_type=B&limit=1000",
+      "note": "ChEMBL activity records for H1 receptor."
+    },
+    {
+      "key": "h1_sequence",
+      "url": "https://rest.uniprot.org/uniprotkb/P35367.fasta",
+      "note": "UniProt FASTA sequence for human H1 receptor."
+    },
+    {
+      "key": "egfr_sequence",
+      "url": "https://rest.uniprot.org/uniprotkb/P00533.fasta",
+      "note": "UniProt FASTA sequence for human EGFR."
+    },
+    {
+      "key": "egfr_sequence",
+      "url": "https://rest.uniprot.org/uniprotkb/P00533.fasta",
+      "note": "UniProt FASTA sequence for human EGFR."
+    },
+    {
+      "key": "egfr_interpolation_local_zinc_archive",
+      "url": "C:\\Users\\kevin\\OneDrive\\Documents\\Research\\DeepDTA-iBAM\\data\\ZINC.tar.gz",
+      "note": "Local property-filtered lead-like ZINC tranche archive used as the decoy background for EGFR interpolation retrieval."
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Data (large files — regenerate via documented workflow)
+data/raw/
+data/cache/
+data/kaggle/
+data/generated_splits/
+data/ZINC.tar.gz
+
+# Model checkpoints (too large for git)
+checkpoints/
+
+# Training logs
+logs/
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.toc
+*.lof
+*.lot
+
+# Compiled PDFs (regenerate via pdflatex)
+main.pdf
+supplementary.pdf
+*.pdf
+!results/*.pdf
+
+# Results cache and temporary files
+results/cache/
+results/downloads/
+results/ablations/
+results/generated_splits/
+results/_tmp_*
+results/*.stderr.log
+results/*.stdout.log
+
+# Draft manuscripts
+DeepDTA-iBAM_paper_*.pdf
+DeepDTA-iBAM_Paper_*.pdf
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Pytest
+.pytest_cache/
+
+# Cluster scripts (internal)
+CLUSTER_SETUP.md
+run_slurm.sh
+setup_supercomputer.sh
