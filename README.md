@@ -10,7 +10,7 @@ DeepDTA-iBAM has five main components:
 
 1. **Ligand encoder** — Multi-head graph attention over atom-bond graphs with edge-feature bias (78 atom features, 12 bond features)
 2. **Protein adapter** — Learned projection of cached ESM-C residue embeddings into the shared fusion space
-3. **Bidirectional cross-attention** — Atom-to-residue and residue-to-atom attention producing interpretable interaction maps (iBAM)
+3. **Bidirectional cross-attention** — Atom-to-residue and residue-to-atom attention producing interpretable binding attention maps (iBAM)
 4. **Affinity prediction head** — KIBA score regression from the fused multimodal state
 5. **Diffusion auxiliary head** — Target-conditioned denoising for seeded, topology-preserving molecular design
 
@@ -107,13 +107,45 @@ DeepDTA-iBAM/
 │   ├── metrics.py                        # CI, RMSE, MAE, AUROC, BEDROC
 │   └── features.py                       # Feature engineering
 ├── tests/                                # Test suite
-└── results/                              # Publication artifacts
-    ├── fig*.png / fig*.pdf               # Manuscript figures (300 dpi)
-    ├── table*.csv / table*.tex           # Manuscript tables
-    ├── *_caption.txt                     # Figure and table captions
+├── analysis/                             # Reproduces every reported statistic
+│   ├── analysis_revision.py              # Meta-analysis, panel separation, ablation and generator tests
+│   ├── analysis_mixed_effects.py         # Residue-level mixed-effects model, permutation bound
+│   ├── export_residue_level.py           # Per-residue attention and contact export
+│   ├── analysis_power.py                 # Power derivation for the localization panel
+│   ├── audit_generated_set.py            # Analog-set audit and scaffold diversity
+│   ├── build_dude_egfr_panel.py          # In-domain assay-defined EGFR panel
+│   ├── score_kinase_panel.py             # Model and fingerprint scoring of that panel
+│   ├── analysis_literature_audit.py      # Audit of reporting practice in published work
+│   ├── literature_audit.csv              # Per-paper verdicts with PMC identifiers
+│   └── make_tables.py / make_figures.py  # Typeset outputs
+└── results/                              # Derived artifacts
+    ├── fig*.pdf / fig*.png               # Figures (vector where available)
+    ├── interpretability_benchmark.csv    # Per-complex localization metrics
+    ├── interpretability_residue_level.csv# 1,385 residues: attention and contact labels
+    ├── dude_egfr_panel_scored.csv        # In-domain panel, both rankers per candidate
+    ├── egfr_assay_actives.csv            # 6,060 unfiltered ChEMBL EGFR actives
+    ├── generated_egfr_analogs_audited.csv# Analogs surviving the structural audit
     ├── case_study_metrics.json           # Aggregated metrics
     └── source_manifest.json              # Provenance tracking
 ```
+
+Manuscript sources are not part of this repository. The `analysis/` scripts
+resolve paths relative to their own location, so they run from a clean clone
+without arguments:
+
+```bash
+python analysis/analysis_revision.py        # meta-analysis and statistical tests
+python analysis/analysis_power.py           # power derivation
+python analysis/audit_generated_set.py      # analog-set audit
+python analysis/analysis_literature_audit.py
+python analysis/analysis_mixed_effects.py   # needs interpretability_residue_level.csv
+```
+
+Two scripts additionally require the model checkpoint and cached embeddings,
+which are not redistributed: `export_residue_level.py` regenerates the
+residue-level export, and `score_kinase_panel.py` rescores the in-domain panel.
+Their outputs are released here so the downstream statistics can be checked
+without rerunning inference.
 
 ## Configuration Profiles
 
@@ -153,6 +185,8 @@ If you use DeepDTA-iBAM in your research, please cite:
 ## Acknowledgements
 
 This study was supported in part by the National Heart, Lung, and Blood Institute under grant numbers U01HL134764, P01 HL160476, R01HL131017, and R01HL149137.
+
+The authors acknowledge the University of Alabama at Birmingham IT Research Computing group for high-performance computing support and CPU/GPU time on the Cheaha compute cluster, which was used for model training and evaluation in this study.
 
 ## License
 

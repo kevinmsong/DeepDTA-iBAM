@@ -75,3 +75,19 @@ desktop.ini
 CLUSTER_SETUP.md
 run_slurm.sh
 setup_supercomputer.sh
+
+# Manuscript and supplementary (not part of the code release)
+J_Cheminform_Submission/
+*.tex
+*.bib
+!analysis/**/*.py
+
+# LaTeX fragments emitted by the analysis scripts
+analysis/table_*.tex
+analysis/*.json
+
+# Case-study caches (regenerate via the documented workflow)
+case_studies/
+
+# Agent tooling
+.claude/

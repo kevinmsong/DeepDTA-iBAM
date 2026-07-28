@@ -2,7 +2,15 @@
 config:
   layout: elk
   theme: neutral
-  look: neo
+  look: classic
+  themeVariables:
+    fontFamily: '"Times New Roman", Times, serif'
+    fontSize: 20px
+  themeCSS: |
+    .nodeLabel, .edgeLabel, .cluster-label, .label {
+      font-family: "Times New Roman", Times, serif !important;
+      font-size: 20px !important;
+    }
 ---
 flowchart TB
  subgraph Training_and_Evaluation["Training and Evaluation Protocol"]
@@ -16,9 +24,9 @@ flowchart TB
     D --> F["Protein Adapter Module<br>Masked Residue Projection"]
     E --> G["Ligand Token Sequence<br>Atom Embeddings +<br>Graph Summary"]
     F --> H["Protein Token Sequence<br>Residue Embeddings +<br>Protein Summary"]
-    G --> I["Bidirectional<br>Cross-Attention Fusion<br>Ligand↔Target Attention"] & K["Global Ligand Summary"] & N["Diffusion Auxiliary Head<br>Protein-Conditioned<br>Node Denoising"]
+    G --> I["Bidirectional<br>Cross-Attention Fusion<br>Ligand-Target Attention"] & K["Global Ligand Summary"] & N["Diffusion Auxiliary Head<br>Protein-Conditioned<br>Node Denoising"]
     H --> I & L["Global Protein Summary"]
-    I --> J["Fused Multimodal Summary"] & P["<b>Interpretable iBAM<br>Atom–Residue<br>Attention Heatmaps</b>"]
+    I --> J["Fused Multimodal Summary"] & P["<b>Interpretable iBAM<br>Atom-Residue<br>Attention Heatmaps</b>"]
     J --> M["Affinity Prediction Head<br>KIBA Regression"]
     K --> M
     L --> M & N

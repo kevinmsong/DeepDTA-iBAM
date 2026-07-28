@@ -9,9 +9,9 @@
   },
   {
     "pdb_id": "4WKQ",
-    "ligand_resname": "AEE",
+    "ligand_resname": "IRE",
     "protein_name": "EGFR",
-    "ligand_name": "erlotinib analog",
+    "ligand_name": "erlotinib",
     "contact_cutoff_angstrom": 4.5,
     "notes": "EGFR kinase domain with ATP-competitive inhibitor"
   },
@@ -25,17 +25,17 @@
   },
   {
     "pdb_id": "1KE6",
-    "ligand_resname": "STA",
+    "ligand_resname": "LS2",
     "protein_name": "CDK2",
-    "ligand_name": "staurosporine",
+    "ligand_name": "co-crystallized inhibitor LS2",
     "contact_cutoff_angstrom": 4.5,
     "notes": "CDK2 with staurosporine, canonical kinase hinge binder"
   },
   {
     "pdb_id": "4RJ3",
-    "ligand_resname": "B96",
+    "ligand_resname": "3QS",
     "protein_name": "VEGFR2",
-    "ligand_name": "sorafenib analog",
+    "ligand_name": "co-crystallized inhibitor 3QS",
     "contact_cutoff_angstrom": 4.5,
     "notes": "VEGFR2 kinase domain with DFG-out inhibitor"
   }

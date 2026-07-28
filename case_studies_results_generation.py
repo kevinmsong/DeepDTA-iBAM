@@ -17,7 +17,7 @@ import textwrap
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
@@ -171,7 +171,7 @@ AA3_TO_1 = {
 ATOM_TYPES = ["C", "N", "O", "S", "F", "P", "Cl", "Br", "I"]
 FORMAL_CHARGE_BINS = [-2, -1, 0, 1, 2]
 MORGAN_GENERATOR = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048)
-SECTION_CHOICES = ("ibam", "fishing", "generation", "interpolation", "ablation", "diagnostics", "benchmark", "manuscript")
+SECTION_CHOICES = ("benchmark", "diagnostics", "ablation", "ibam", "interpolation", "generation", "fishing", "manuscript")
 PROFILE_CHOICES = (
     "baseline_repro",
     "max_rmse_cluster",
@@ -269,9 +269,9 @@ def configure_publication_style() -> None:
     sns.set_theme(style="whitegrid")
     plt.rcParams.update(
         {
-            "font.family": "serif",
-            "font.serif": ["Times New Roman", "Times", "Nimbus Roman", "DejaVu Serif"],
-            "mathtext.fontset": "stix",
+            "font.family": "sans-serif",
+            "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans", "Liberation Sans"],
+            "mathtext.fontset": "dejavusans",
             "font.size": 12,
             "axes.titlesize": 14,
             "axes.labelsize": 12,
@@ -358,9 +358,42 @@ def save_table_outputs(
     caption_path = results_dir / f"{stem}_caption.txt"
     dataframe.to_csv(csv_path, index=False)
     render_df = latex_dataframe if latex_dataframe is not None else dataframe
-    tex_body = render_df.to_latex(index=False, escape=True, float_format=lambda value: f"{value:.4f}" if isinstance(value, float) else str(value))
+    tex_body = render_df.to_latex(
+        index=False,
+        escape=True,
+        na_rep="",
+        float_format=lambda value: f"{value:.4f}" if isinstance(value, float) else str(value),
+    )
     write_text(tex_path, tex_body)
     write_text(caption_path, caption.strip() + "\n")
+
+
+def save_metrics_table(
+    rows: Sequence[Mapping[str, Any]],
+    stem: str,
+    results_dir: Path,
+    caption: str,
+    *,
+    latex_columns: Sequence[str] | None = None,
+) -> pd.DataFrame:
+    dataframe = pd.DataFrame(rows)
+    latex_dataframe = None
+    if latex_columns is not None:
+        latex_dataframe = dataframe.loc[:, list(latex_columns)].copy()
+    save_table_outputs(
+        dataframe,
+        stem,
+        results_dir,
+        caption,
+        latex_dataframe=latex_dataframe,
+    )
+    return dataframe
+
+
+def ensure_required_assets(paths: Sequence[Path]) -> None:
+    missing = [str(path) for path in paths if not path.exists()]
+    if missing:
+        raise FileNotFoundError("Missing required publication assets: " + ", ".join(missing))
 
 
 def latex_escape(text: str) -> str:
@@ -396,12 +429,136 @@ def tanimoto_similarity(fp_a, fp_b) -> float:
     return float(DataStructs.TanimotoSimilarity(fp_a, fp_b))
 
 
+def fingerprint_bit_array(fp) -> np.ndarray:
+    if fp is None:
+        return np.zeros(2048, dtype=np.uint8)
+    bitstring = fp.ToBitString()
+    return np.fromiter((1 if char == "1" else 0 for char in bitstring), dtype=np.uint8)
+
+
+def consensus_fingerprint(fingerprints: Sequence[Any], *, threshold: float = 0.5):
+    valid = [fp for fp in fingerprints if fp is not None]
+    if not valid:
+        return None
+    mean_bits = np.mean(np.stack([fingerprint_bit_array(fp) for fp in valid], axis=0), axis=0)
+    bitstring = "".join("1" if value >= threshold else "0" for value in mean_bits)
+    return DataStructs.CreateFromBitString(bitstring)
+
+
 def zscore_array(values: np.ndarray) -> np.ndarray:
     mean = float(np.mean(values))
     std = float(np.std(values))
     if std <= 1e-8:
         return np.zeros_like(values, dtype=float)
     return (values - mean) / std
+
+
+def safe_std(values: np.ndarray) -> float:
+    values = np.asarray(values, dtype=float)
+    if values.size <= 1:
+        return 0.0
+    return float(values.std(ddof=1))
+
+
+def bootstrap_scalar_metric(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    metric_fn: Callable[[np.ndarray, np.ndarray], float],
+    *,
+    n_boot: int = 1000,
+    seed: int = 1337,
+) -> Dict[str, float]:
+    y_true = np.asarray(y_true, dtype=float).reshape(-1)
+    y_pred = np.asarray(y_pred, dtype=float).reshape(-1)
+    if y_true.size == 0 or y_pred.size == 0:
+        return {"value": 0.0, "ci_low": 0.0, "ci_high": 0.0}
+    if y_true.shape != y_pred.shape:
+        raise ValueError("bootstrap inputs must share shape")
+    rng = np.random.default_rng(seed)
+    boot = np.zeros(n_boot, dtype=float)
+    for idx in range(n_boot):
+        sample_idx = rng.integers(0, y_true.size, size=y_true.size)
+        boot[idx] = float(metric_fn(y_true[sample_idx], y_pred[sample_idx]))
+    observed = float(metric_fn(y_true, y_pred))
+    return {
+        "value": observed,
+        "ci_low": float(np.percentile(boot, 2.5)),
+        "ci_high": float(np.percentile(boot, 97.5)),
+    }
+
+
+def bootstrap_regression_metrics(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    *,
+    seed: int,
+    n_boot: int = 1000,
+) -> Dict[str, Dict[str, float]]:
+    from utils.metrics import mae, pearson_correlation, r_squared, rmse
+
+    metrics = {
+        "RMSE": lambda truth, preds: float(rmse(truth, preds)),
+        "MAE": lambda truth, preds: float(mae(truth, preds)),
+        "CI": lambda truth, preds: float(concordance_index(truth, preds, max_samples=len(truth))),
+        "Pearson": lambda truth, preds: float(pearson_correlation(truth, preds)),
+        "R2": lambda truth, preds: float(r_squared(truth, preds)),
+    }
+    return {
+        name: bootstrap_scalar_metric(y_true, y_pred, fn, seed=seed + offset, n_boot=n_boot)
+        for offset, (name, fn) in enumerate(metrics.items())
+    }
+
+
+def bootstrap_retrieval_metrics(
+    labels: np.ndarray,
+    scores: np.ndarray,
+    *,
+    seed: int,
+    n_boot: int = 1000,
+) -> Dict[str, Dict[str, float]]:
+    labels = np.asarray(labels, dtype=int).reshape(-1)
+    scores = np.asarray(scores, dtype=float).reshape(-1)
+    if labels.shape != scores.shape:
+        raise ValueError("labels and scores must share shape")
+    metric_fns: Dict[str, Callable[[np.ndarray, np.ndarray], float]] = {
+        "AUROC": lambda y, s: float(auroc(y, s)),
+        "AUPRC": lambda y, s: float(auprc(y, s)),
+        "BEDROC20": lambda y, s: float(bedroc(y, s)),
+        "Recovery@5%": lambda y, s: float(topk_recovery(y, s, 0.05)),
+        "Recovery@10%": lambda y, s: float(topk_recovery(y, s, 0.10)),
+    }
+    rng = np.random.default_rng(seed)
+    indices = np.arange(labels.size)
+    boot = {name: [] for name in metric_fns}
+    for _ in range(n_boot):
+        sample_idx = rng.choice(indices, size=labels.size, replace=True)
+        sample_labels = labels[sample_idx]
+        if sample_labels.sum() == 0 or sample_labels.sum() == sample_labels.size:
+            continue
+        sample_scores = scores[sample_idx]
+        for name, fn in metric_fns.items():
+            boot[name].append(float(fn(sample_labels, sample_scores)))
+    summary: Dict[str, Dict[str, float]] = {}
+    for name, fn in metric_fns.items():
+        observed = float(fn(labels, scores))
+        if boot[name]:
+            summary[name] = {
+                "value": observed,
+                "ci_low": float(np.percentile(boot[name], 2.5)),
+                "ci_high": float(np.percentile(boot[name], 97.5)),
+            }
+        else:
+            summary[name] = {"value": observed, "ci_low": observed, "ci_high": observed}
+    return summary
+
+
+def describe_numeric_series(values: Sequence[float]) -> Dict[str, float]:
+    array = np.asarray(values, dtype=float)
+    return {
+        "mean": float(array.mean()) if array.size else 0.0,
+        "median": float(np.median(array)) if array.size else 0.0,
+        "sd": safe_std(array),
+    }
 
 
 def read_caption(results_dir: Path, caption_file: str, fallback: str = "Caption pending.") -> str:
@@ -799,16 +956,16 @@ def run_ibam_section(ctx: PublicationContext) -> Dict[str, Any]:
     )
     top_overlay = contact_overlay.sort_values("residue_score", ascending=False).head(15).iloc[::-1]
 
-    fig = plt.figure(figsize=(18, 12))
+    fig = plt.figure(figsize=(18, 12.5))
     grid = fig.add_gridspec(2, 2, height_ratios=[3, 1.6])
     ax1 = fig.add_subplot(grid[0, 0])
     ax2 = fig.add_subplot(grid[0, 1])
     ax3 = fig.add_subplot(grid[1, :])
 
     sns.heatmap(atom_to_residue, ax=ax1, cmap="mako", cbar_kws={"label": "Mean attention"})
-    ax1.set_title("Ligand to target cross-attention", fontsize=18, pad=12)
-    ax1.set_xlabel("FAK1 residues")
-    ax1.set_ylabel("P4N atoms")
+    ax1.set_title("Ligand to target cross-attention", fontsize=20, pad=12)
+    ax1.set_xlabel("FAK1 residues", fontsize=15)
+    ax1.set_ylabel("P4N atoms", fontsize=15)
     tick_positions = np.linspace(0, len(residue_labels) - 1, min(12, len(residue_labels)), dtype=int)
     ax1.set_xticks(tick_positions + 0.5)
     ax1.set_xticklabels([residue_labels[idx] for idx in tick_positions], rotation=45, ha="right")
@@ -816,9 +973,9 @@ def run_ibam_section(ctx: PublicationContext) -> Dict[str, Any]:
     ax1.set_yticklabels(atom_labels, rotation=0)
 
     sns.heatmap(residue_to_atom, ax=ax2, cmap="crest", cbar_kws={"label": "Mean attention"})
-    ax2.set_title("Target to ligand cross-attention", fontsize=18, pad=12)
-    ax2.set_xlabel("P4N atoms")
-    ax2.set_ylabel("FAK1 residues")
+    ax2.set_title("Target to ligand cross-attention", fontsize=20, pad=12)
+    ax2.set_xlabel("P4N atoms", fontsize=15)
+    ax2.set_ylabel("FAK1 residues", fontsize=15)
     ax2.set_xticks(np.arange(len(atom_labels)) + 0.5)
     ax2.set_xticklabels(atom_labels, rotation=45, ha="right")
     ax2.set_yticks(tick_positions + 0.5)
@@ -827,22 +984,181 @@ def run_ibam_section(ctx: PublicationContext) -> Dict[str, Any]:
     ax3.barh(top_overlay["residue_label"], top_overlay["residue_score"], color="#3b82f6", label="iBAM score")
     x_max = float(max(top_overlay["residue_score"].max(), 1e-6))
     ax3.set_xlim(0.0, x_max * 1.08)
-    ax3.set_title("Residue attention versus structure-derived contacts", fontsize=18, pad=10)
-    ax3.set_xlabel("Mean residue attention")
+    ax3.set_title("Residue attention versus structure-derived contacts", fontsize=20, pad=10)
+    ax3.set_xlabel("Mean residue attention", fontsize=15)
     ax3.margins(x=0.0)
     for axis in (ax1, ax2, ax3):
-        axis.tick_params(labelsize=12)
-    ax2.tick_params(axis="x", labelsize=10)
+        axis.tick_params(labelsize=13)
+    ax2.tick_params(axis="x", labelsize=12)
+    for colorbar_axis in (ax1.collections[0].colorbar.ax, ax2.collections[0].colorbar.ax):
+        colorbar_axis.tick_params(labelsize=12)
+        colorbar_axis.yaxis.label.set_size(14)
 
     caption = textwrap.dedent(
         f"""
-        P4N-FAK1 iBAM interpretation. The ligand-to-target and target-to-ligand cross-attention maps for the known FAK1 inhibitor P4N were compared with structure-derived contact annotations extracted from the 6YOJ co-crystal. Literature analysis of the same complex reported hydrogen bonds with Cys95 and Asp157, weaker carbon-hydrogen contacts with Glu93 and Gly156, and hydrophobic interactions involving Ile21, Leu94, and Leu146 in kinase-domain numbering; the aggregated iBAM profiles concentrate attention on the same contacted region, supporting the structural interpretability claim. Source: RCSB PDB and the FAK1-P4N structural analysis article ({FAK1_P4N_LITERATURE_URL}).
+        FAK1-P4N iBAM case study based on the 6YOJ co-crystal complex. The left and center panels display the ligand-to-target and target-to-ligand cross-attention maps after aligning ligand atoms and protein residues to the crystallographic structure, and the right panel compares mean residue attention with structure-derived contact annotations for the highest-scoring residues. Published structural analysis of 6YOJ reported hydrogen bonds with Cys95 and Asp157, weaker carbon-hydrogen contacts with Glu93 and Gly156, and hydrophobic contacts involving Ile21, Leu94, and Leu146 in kinase-domain numbering. In keeping with the panel-level benchmark, this figure is presented as a qualitative localization example rather than as definitive mechanistic proof of residue-level causality.
         """
     ).strip()
     save_figure(fig, "fig1_p4n_fak1_ibam", ctx.results_dir, caption)
     ctx.record_source("fak1_p4n_literature", FAK1_P4N_LITERATURE_URL, "Literature reference used in the figure caption.")
-    ctx.update_section_metrics("ibam", metrics)
-    return metrics
+    benchmark_metrics = run_interpretability_benchmark_summary(ctx)
+    merged_metrics = dict(metrics)
+    merged_metrics.update(benchmark_metrics)
+    ctx.update_section_metrics("ibam", merged_metrics)
+    return merged_metrics
+
+
+def plot_interpretability_summary_figure(dataframe: pd.DataFrame) -> plt.Figure:
+    metric_specs = [
+        ("residue_contact_auroc", "Residue contact AUROC", 0.0, 1.0),
+        ("atom_contact_auroc", "Atom contact AUROC", 0.0, 1.0),
+        ("residue_topk_overlap", "Residue top-k overlap", 0.0, 1.0),
+        ("atom_topk_overlap", "Atom top-k overlap", 0.0, 1.0),
+        ("residue_mask_signal", "Residue perturbation signal", None, None),
+        ("atom_mask_signal", "Atom perturbation signal", None, None),
+    ]
+    fig, axes = plt.subplots(2, 3, figsize=(15.5, 8.8))
+    axes = axes.flatten()
+    rng = np.random.default_rng(1337)
+    for ax, (metric_name, title, ymin, ymax) in zip(axes, metric_specs):
+        values = dataframe[metric_name].dropna().to_numpy(dtype=float)
+        if values.size:
+            ax.boxplot(
+                [values],
+                positions=[0.0],
+                widths=0.35,
+                patch_artist=True,
+                boxprops={"facecolor": "#bfdbfe", "edgecolor": "#1d4ed8", "linewidth": 1.2},
+                medianprops={"color": "#1d4ed8", "linewidth": 1.5},
+                whiskerprops={"color": "#1d4ed8", "linewidth": 1.1},
+                capprops={"color": "#1d4ed8", "linewidth": 1.1},
+                flierprops={"marker": "o", "markersize": 0},
+            )
+            jitter = rng.uniform(-0.06, 0.06, size=values.size)
+            ax.scatter(jitter, values, color="#1d4ed8", s=42, zorder=3)
+        ax.set_title(title, fontsize=14)
+        ax.set_xlabel("")
+        ax.set_xticks([])
+        ax.set_xlim(-0.3, 0.3)
+        if ymin is not None and ymax is not None:
+            ax.set_ylim(ymin, ymax)
+        if "auroc" in metric_name or "overlap" in metric_name:
+            ax.axhline(0.5 if "auroc" in metric_name else 0.0, color="#9ca3af", linestyle="--", linewidth=1.0)
+        ax.tick_params(labelsize=11)
+    fig.suptitle("Structural localization benchmark across five kinase complexes", fontsize=17, y=1.02)
+    fig.tight_layout()
+    return fig
+
+
+def run_interpretability_benchmark_summary(ctx: PublicationContext) -> Dict[str, Any]:
+    import run_interpretability_benchmark as interp_bench
+
+    benchmark_path = Path("data/interpretability_benchmark.json")
+    benchmark_entries = json.loads(benchmark_path.read_text(encoding="utf-8"))
+    config = clone_config_for_results(ctx.base_config, ctx.results_dir, ctx.base_config.profile_name, device=ctx.args.device)
+    config.checkpoint_dir = ctx.base_config.checkpoint_dir
+    results_dir = ctx.results_dir
+    figs_dir = ctx.results_dir / "figs"
+    pdb_cache_dir = ctx.results_dir / "downloads" / "interpretability_pdb"
+    pdb_cache_dir.mkdir(parents=True, exist_ok=True)
+
+    all_results: List[Dict[str, Any]] = []
+    for entry in benchmark_entries:
+        result = interp_bench.run_complex(
+            entry,
+            config,
+            pdb_cache_dir,
+            results_dir,
+            figs_dir,
+            topk=10,
+            force=ctx.args.force_refresh,
+        )
+        if result is not None:
+            all_results.append(result)
+    if not all_results:
+        raise RuntimeError("Interpretability benchmark did not produce any successful complexes.")
+
+    per_complex_df = pd.DataFrame(all_results).sort_values("pdb_id").reset_index(drop=True)
+    per_complex_df.to_csv(ctx.results_dir / "interpretability_benchmark.csv", index=False)
+    save_table_outputs(
+        per_complex_df[
+            [
+                "pdb_id",
+                "protein",
+                "ligand",
+                "residue_contact_auroc",
+                "atom_contact_auroc",
+                "residue_topk_overlap",
+                "atom_topk_overlap",
+                "residue_mask_signal",
+                "atom_mask_signal",
+            ]
+        ],
+        "table_s_interpretability_per_complex",
+        ctx.results_dir,
+        (
+            "Per-complex structural localization benchmark across five kinase co-crystal complexes. Each row reports "
+            "residue-contact AUROC, atom-contact AUROC, residue and atom top-10 overlap, and perturbation signals "
+            "for one protein-ligand pair. Positive perturbation values indicate that masking the top-ranked tokens "
+            "reduced predicted affinity more than masking a matched random set, whereas negative values indicate no "
+            "functional enrichment beyond random masking."
+        ),
+    )
+
+    summary_metric_names = [
+        "residue_contact_auroc",
+        "atom_contact_auroc",
+        "residue_topk_overlap",
+        "atom_topk_overlap",
+        "residue_mask_signal",
+        "atom_mask_signal",
+    ]
+    summary_rows = []
+    metrics_payload: Dict[str, Any] = {"benchmark_num_complexes": int(len(per_complex_df))}
+    for metric_name in summary_metric_names:
+        description = describe_numeric_series(per_complex_df[metric_name].to_numpy())
+        display_name = metric_name.replace("_", " ").title()
+        summary_rows.append(
+            {
+                "Metric": display_name,
+                "Mean": description["mean"],
+                "Median": description["median"],
+                "SD": description["sd"],
+            }
+        )
+        metrics_payload[f"{metric_name}_mean"] = description["mean"]
+        metrics_payload[f"{metric_name}_median"] = description["median"]
+        metrics_payload[f"{metric_name}_sd"] = description["sd"]
+    save_metrics_table(
+        summary_rows,
+        "table_interpretability_summary",
+        ctx.results_dir,
+        (
+            "Structural localization benchmark summary across five kinase complexes. Rows report the panel-level mean, "
+            "median, and standard deviation for residue-contact AUROC, atom-contact AUROC, residue and atom top-10 "
+            "overlap, and perturbation signals. The summary is intended to ground the interpretability claim in "
+            "aggregate behavior rather than in a single highlighted complex, and it therefore provides the primary "
+            "quantitative context for the qualitative FAK1-P4N case study."
+        ),
+        latex_columns=["Metric", "Mean", "Median", "SD"],
+    )
+
+    summary_fig = plot_interpretability_summary_figure(per_complex_df)
+    save_figure(
+        summary_fig,
+        "fig_interpretability_summary",
+        ctx.results_dir,
+        (
+            f"Structural localization benchmark across {len(per_complex_df)} kinase complexes. Each panel shows a "
+            "boxplot with overlaid per-complex points for residue-contact AUROC, atom-contact AUROC, residue and "
+            "atom top-10 overlap, and residue and atom perturbation signal. Dashed reference lines indicate chance-"
+            "level AUROC or zero-overlap baselines where applicable. Residue-level localization was modest overall "
+            f"(mean AUROC {metrics_payload['residue_contact_auroc_mean']:.3f}), whereas atom-level contact enrichment "
+            f"was weak (mean AUROC {metrics_payload['atom_contact_auroc_mean']:.3f}), supporting a cautious "
+            "residue-scale interpretation of the attention maps."
+        ),
+    )
+    return metrics_payload
 
 
 def fetch_chembl_target(target_name: str) -> Dict[str, Any]:
@@ -1199,6 +1515,18 @@ def mixed_screening_metrics(labels: np.ndarray, scores: np.ndarray) -> Dict[str,
     return metrics
 
 
+def max_panel_similarity_scores(query_smiles: Sequence[str], panel_smiles: Sequence[str]) -> np.ndarray:
+    panel_fps = {smiles: fingerprint_from_smiles(smiles) for smiles in panel_smiles}
+    scores = []
+    for smiles in query_smiles:
+        fp = fingerprint_from_smiles(smiles)
+        compare_fps = [other_fp for other_smiles, other_fp in panel_fps.items() if other_smiles != smiles]
+        if not compare_fps:
+            compare_fps = [panel_fps[smiles]] if smiles in panel_fps else []
+        scores.append(max((tanimoto_similarity(fp, other_fp) for other_fp in compare_fps), default=0.0))
+    return np.asarray(scores, dtype=float)
+
+
 def aggregate_metric_records(metric_records: Sequence[Mapping[str, float]]) -> Tuple[Dict[str, float], pd.DataFrame]:
     keys = sorted({key for record in metric_records for key in record.keys()})
     summary: Dict[str, float] = {}
@@ -1338,30 +1666,52 @@ def run_fishing_section(ctx: PublicationContext) -> Dict[str, Any]:
     mixed_libraries["score"] = scores
     known_h1_smiles = set(h1_drugs["smiles"])
     replicate_metric_records: List[Dict[str, float]] = []
+    similarity_metric_records: List[Dict[str, float]] = []
     roc_records: List[Tuple[np.ndarray, np.ndarray]] = []
     pr_records: List[Tuple[np.ndarray, np.ndarray]] = []
+    sim_roc_records: List[Tuple[np.ndarray, np.ndarray]] = []
+    sim_pr_records: List[Tuple[np.ndarray, np.ndarray]] = []
     per_replicate_rows: List[Dict[str, Any]] = []
     for replicate_id, replicate_df in mixed_libraries.groupby("replicate"):
         labels = replicate_df["smiles"].isin(known_h1_smiles).astype(int).to_numpy()
         replicate_scores = replicate_df["score"].to_numpy(dtype=float)
         replicate_metrics = mixed_screening_metrics(labels, replicate_scores)
-        per_replicate_rows.append({"replicate": int(replicate_id), **replicate_metrics})
+        similarity_scores = max_panel_similarity_scores(replicate_df["smiles"].tolist(), h1_drugs["smiles"].tolist())
+        similarity_metrics = mixed_screening_metrics(labels, similarity_scores)
+        per_replicate_rows.append(
+            {
+                "replicate": int(replicate_id),
+                **{f"model_{key}": value for key, value in replicate_metrics.items()},
+                **{f"similarity_{key}": value for key, value in similarity_metrics.items()},
+            }
+        )
         replicate_metric_records.append(replicate_metrics)
+        similarity_metric_records.append(similarity_metrics)
         roc_records.append(roc_curve_arrays(labels, replicate_scores))
         pr_records.append(precision_recall_curve_arrays(labels, replicate_scores))
+        sim_roc_records.append(roc_curve_arrays(labels, similarity_scores))
+        sim_pr_records.append(precision_recall_curve_arrays(labels, similarity_scores))
 
     replicate_metrics_df = pd.DataFrame(per_replicate_rows)
     replicate_metrics_df.to_csv(ctx.results_dir / "h1_drug_fishing_replicate_metrics.csv", index=False)
     if not replicate_metric_records:
         raise ValueError("No H1 mixed-library replicates were scored.")
-    summary_metrics, summary_metrics_df = aggregate_metric_records(replicate_metric_records)
-    write_json(ctx.results_dir / "h1_drug_fishing_sensitivity_summary.json", summary_metrics)
+    model_summary_metrics, summary_metrics_df = aggregate_metric_records(replicate_metric_records)
+    similarity_summary_metrics, similarity_summary_df = aggregate_metric_records(similarity_metric_records)
+    write_json(
+        ctx.results_dir / "h1_drug_fishing_sensitivity_summary.json",
+        {"model": model_summary_metrics, "similarity_baseline": similarity_summary_metrics},
+    )
     summary_metrics_df.to_csv(ctx.results_dir / "h1_drug_fishing_sensitivity_summary.csv", index=False)
-    metrics = dict(summary_metrics)
+    similarity_summary_df.to_csv(ctx.results_dir / "h1_similarity_baseline_summary.csv", index=False)
+    metrics = dict(model_summary_metrics)
     metrics["num_h1_drugs"] = int(len(h1_drugs))
     metrics["num_replicates"] = int(H1_FISHING_REPLICATES)
     metrics["primary_library_size"] = int(ctx.args.screen_lib_size)
     metrics["positive_prevalence"] = float(len(h1_drugs) / max(1, ctx.args.screen_lib_size))
+    metrics["similarity_baseline_auroc"] = float(similarity_summary_metrics["AUROC"])
+    metrics["similarity_baseline_auprc"] = float(similarity_summary_metrics["AUPRC"])
+    metrics["similarity_baseline_bedroc20"] = float(similarity_summary_metrics["BEDROC20"])
 
     kiba_df = pd.concat(
         [
@@ -1410,36 +1760,29 @@ def run_fishing_section(ctx: PublicationContext) -> Dict[str, Any]:
 
     fishing_table = pd.DataFrame(
         [
-            {"Metric": "H1 ligand panel size", "Value": float(metrics["num_h1_drugs"]), "SD": np.nan},
-            {"Metric": "Library size per replicate", "Value": float(metrics["primary_library_size"]), "SD": np.nan},
-            {"Metric": "Positive prevalence", "Value": metrics["positive_prevalence"], "SD": np.nan},
-            {"Metric": "AUROC", "Value": metrics["AUROC"], "SD": metrics.get("AUROC_sd", np.nan)},
-            {"Metric": "AUPRC", "Value": metrics["AUPRC"], "SD": metrics.get("AUPRC_sd", np.nan)},
-            {"Metric": "BEDROC20", "Value": metrics["BEDROC20"], "SD": metrics.get("BEDROC20_sd", np.nan)},
-            {"Metric": "EF1%", "Value": metrics["EF1pct"], "SD": metrics.get("EF1pct_sd", np.nan)},
-            {"Metric": "EF5%", "Value": metrics["EF5pct"], "SD": metrics.get("EF5pct_sd", np.nan)},
-            {"Metric": "Recovery@5%", "Value": metrics["recovery_top_5pct"], "SD": metrics.get("recovery_top_5pct_sd", np.nan)},
-            {"Metric": "Recovery@10%", "Value": metrics["recovery_top_10pct"], "SD": metrics.get("recovery_top_10pct_sd", np.nan)},
+            {"Method": "DeepDTA-iBAM", "AUROC": metrics["AUROC"], "AUPRC": metrics["AUPRC"], "BEDROC20": metrics["BEDROC20"], "Recovery@10%": metrics["recovery_top_10pct"], "Specificity MRR": metrics["specificity_mrr"]},
+            {"Method": "Nearest-active ECFP", "AUROC": similarity_summary_metrics["AUROC"], "AUPRC": similarity_summary_metrics["AUPRC"], "BEDROC20": similarity_summary_metrics["BEDROC20"], "Recovery@10%": similarity_summary_metrics["recovery_top_10pct"], "Specificity MRR": np.nan},
         ]
     )
-    fishing_table_latex = fishing_table.copy()
-    fishing_table_latex["SD"] = fishing_table_latex["SD"].map(lambda value: "" if pd.isna(value) else value)
     save_table_outputs(
         fishing_table,
         "table3_h1_drug_fishing_metrics",
         ctx.results_dir,
         (
-            f"External H1 retrieval test metrics. The analysis used {len(h1_drugs)} curated H1 ligands embedded into "
-            f"{H1_FISHING_REPLICATES} independently sampled {ctx.args.screen_lib_size}-compound lead-like mixed "
-            "libraries drawn from ZINC22. Reported retrieval metrics are mean +/- SD across replicate libraries."
+            f"Supplementary H1 retrieval stress-test metrics. {len(h1_drugs)} curated H1 ligands were embedded into "
+            f"{H1_FISHING_REPLICATES} independently sampled {ctx.args.screen_lib_size:,}-compound lead-like libraries "
+            "and ranked by DeepDTA-iBAM or by a nearest-active ECFP/Tanimoto baseline. Reported retrieval values are "
+            "means across replicate libraries. Specificity mean reciprocal rank is provided only for the target-"
+            "conditioned model because the similarity baseline does not define a comparable cross-target ranking."
         ),
-        latex_dataframe=fishing_table_latex,
     )
 
     roc_grid = np.linspace(0.0, 1.0, 200)
     pr_grid = np.linspace(0.0, 1.0, 200)
     mean_tpr = np.mean([np.interp(roc_grid, fpr, tpr) for fpr, tpr in roc_records], axis=0)
     mean_precision = np.mean([np.interp(pr_grid, recall, precision) for recall, precision in pr_records], axis=0)
+    sim_mean_tpr = np.mean([np.interp(roc_grid, fpr, tpr) for fpr, tpr in sim_roc_records], axis=0)
+    sim_mean_precision = np.mean([np.interp(pr_grid, recall, precision) for recall, precision in sim_pr_records], axis=0)
     baseline = metrics["positive_prevalence"]
 
     fig, axes = plt.subplots(1, 2, figsize=(12.0, 5.2))
@@ -1448,24 +1791,34 @@ def run_fishing_section(ctx: PublicationContext) -> Dict[str, Any]:
         roc_ax.plot(fpr, tpr, color="#cbd5e1", lw=1.2, alpha=0.75, zorder=1)
     roc_ax.plot([0.0, 1.0], [0.0, 1.0], color="#94a3b8", linestyle="--", linewidth=1.2, zorder=1)
     roc_ax.plot(roc_grid, mean_tpr, color="#1d4ed8", lw=3.0, zorder=3)
+    roc_ax.plot(roc_grid, sim_mean_tpr, color="#ca8a04", lw=2.4, linestyle=":", zorder=2)
     roc_ax.set_xlim(0.0, 1.0)
     roc_ax.set_ylim(0.0, 1.02)
     roc_ax.set_xlabel("False positive rate")
     roc_ax.set_ylabel("True positive rate")
     roc_ax.set_title("ROC across replicate libraries")
     roc_ax.text(
-        0.54,
-        0.12,
+        0.47,
+        0.15,
         f"AUROC = {metrics['AUROC']:.3f} ± {metrics.get('AUROC_sd', 0.0):.3f}",
         transform=roc_ax.transAxes,
         fontsize=11,
         color="#1e3a8a",
+    )
+    roc_ax.text(
+        0.47,
+        0.06,
+        f"ECFP baseline = {similarity_summary_metrics['AUROC']:.3f}",
+        transform=roc_ax.transAxes,
+        fontsize=10.5,
+        color="#854d0e",
     )
 
     for recall, precision in pr_records:
         pr_ax.plot(recall, precision, color="#cbd5e1", lw=1.2, alpha=0.75, zorder=1)
     pr_ax.axhline(baseline, color="#94a3b8", linestyle="--", linewidth=1.2, zorder=1)
     pr_ax.plot(pr_grid, mean_precision, color="#0f766e", lw=3.0, zorder=3)
+    pr_ax.plot(pr_grid, sim_mean_precision, color="#ca8a04", lw=2.4, linestyle=":", zorder=2)
     pr_ax.set_xlim(0.0, 1.0)
     pr_ax.set_ylim(0.0, 1.02)
     pr_ax.set_xlabel("Recall")
@@ -1487,10 +1840,18 @@ def run_fishing_section(ctx: PublicationContext) -> Dict[str, Any]:
         fontsize=10,
         color="#334155",
     )
+    pr_ax.legend(
+        handles=[
+            plt.Line2D([0], [0], color="#0f766e", lw=3.0, label="DeepDTA-iBAM mean"),
+            plt.Line2D([0], [0], color="#ca8a04", lw=2.4, linestyle=":", label="Nearest-active ECFP"),
+        ],
+        fontsize=9,
+        loc="upper right",
+    )
 
     caption = textwrap.dedent(
         f"""
-        External H1 retrieval test. A curated panel of {len(h1_drugs)} H1 ligands with supporting ChEMBL potency evidence was embedded into {H1_FISHING_REPLICATES} independently sampled {ctx.args.screen_lib_size:,}-compound lead-like libraries from ZINC22 and ranked by the DeepDTA-iBAM affinity model. The left panel shows replicate ROC traces together with the mean curve, and the right panel shows the corresponding precision-recall traces with the prevalence baseline. Across replicate libraries, mean AUROC was {metrics['AUROC']:.3f} +/- {metrics.get('AUROC_sd', np.nan):.3f}, mean AUPRC was {metrics['AUPRC']:.3f} +/- {metrics.get('AUPRC_sd', np.nan):.3f}, and mean BEDROC20 was {metrics['BEDROC20']:.3f} +/- {metrics.get('BEDROC20_sd', np.nan):.3f}. Because H1 lies outside the kinase-focused KIBA training distribution, the study is interpreted as an external retrieval stress test rather than as a prospective screening claim.
+        Supplementary H1 retrieval stress test across replicate mixed libraries. The left panel shows ROC curves and the right panel shows precision-recall curves for {H1_FISHING_REPLICATES} independently sampled {ctx.args.screen_lib_size:,}-compound lead-like libraries, each containing {len(h1_drugs)} curated H1 actives with supporting ChEMBL potency evidence. Faint lines show replicate-specific model performance, and heavy lines show the mean DeepDTA-iBAM and nearest-active ECFP baselines. DeepDTA-iBAM retained a reproducible but modest out-of-domain signal (AUROC = {metrics['AUROC']:.3f} ± {metrics.get('AUROC_sd', 0.0):.3f}; AUPRC = {metrics['AUPRC']:.3f} ± {metrics.get('AUPRC_sd', 0.0):.3f}), whereas the ligand-similarity baseline dominated, so the experiment is retained only as a supplementary stress test rather than as evidence of prospective screening utility.
         """
     ).strip()
     save_figure(fig, "fig2_h1_drug_fishing", ctx.results_dir, caption)
@@ -2027,6 +2388,58 @@ def cumulative_recovery_curve(labels: np.ndarray, scores: np.ndarray, fractions:
     return np.asarray([topk_recovery(labels, scores, float(fraction)) for fraction in fractions], dtype=float)
 
 
+def nearest_anchor_tanimoto_scores(candidate_smiles: Sequence[str], anchor_fps: Sequence[Any]) -> np.ndarray:
+    scores = []
+    for smiles in candidate_smiles:
+        fp = fingerprint_from_smiles(smiles)
+        scores.append(max((tanimoto_similarity(fp, anchor_fp) for anchor_fp in anchor_fps), default=0.0))
+    return np.asarray(scores, dtype=float)
+
+
+def centroid_tanimoto_scores(candidate_smiles: Sequence[str], anchor_fps: Sequence[Any]) -> np.ndarray:
+    centroid_fp = consensus_fingerprint(anchor_fps)
+    scores = []
+    for smiles in candidate_smiles:
+        fp = fingerprint_from_smiles(smiles)
+        scores.append(tanimoto_similarity(fp, centroid_fp))
+    return np.asarray(scores, dtype=float)
+
+
+def retrieval_metric_rows(
+    labels: np.ndarray,
+    method_scores: Mapping[str, np.ndarray],
+    *,
+    seed: int,
+    methods_for_main_table: Sequence[str],
+) -> Tuple[pd.DataFrame, pd.DataFrame, Dict[str, Any]]:
+    main_rows: List[Dict[str, Any]] = []
+    full_rows: List[Dict[str, Any]] = []
+    payload: Dict[str, Any] = {}
+    for method_name, scores in method_scores.items():
+        metric_values = retrieval_metrics_from_scores(labels, scores)
+        metric_bootstrap = bootstrap_retrieval_metrics(labels, scores, seed=seed + len(full_rows), n_boot=500)
+        row: Dict[str, Any] = {"Method": method_name}
+        for metric_name, metric_value in metric_values.items():
+            row[metric_name] = metric_value
+            if metric_name in metric_bootstrap:
+                row[f"{metric_name} CI low"] = metric_bootstrap[metric_name]["ci_low"]
+                row[f"{metric_name} CI high"] = metric_bootstrap[metric_name]["ci_high"]
+            normalized_method = (
+                method_name.lower()
+                .replace(" ", "_")
+                .replace("/", "_")
+                .replace("-", "_")
+                .replace("(", "")
+                .replace(")", "")
+            )
+            key_root = f"{normalized_method}_{metric_name.lower().replace('%', 'pct').replace('@', '_at_')}"
+            payload[key_root] = float(metric_value)
+        full_rows.append(row)
+        if method_name in methods_for_main_table:
+            main_rows.append(row)
+    return pd.DataFrame(main_rows), pd.DataFrame(full_rows), payload
+
+
 def run_interpolation_section(ctx: PublicationContext) -> Dict[str, Any]:
     egfr_sequence = fetch_egfr_sequence(ctx)
     family_df = fetch_egfr_family_binders(ctx)
@@ -2098,14 +2511,17 @@ def run_interpolation_section(ctx: PublicationContext) -> Dict[str, Any]:
         nearest_anchor_tanimoto.append(float(similarities[best_idx]))
     candidate_df["NearestAnchor"] = nearest_anchor_labels
     candidate_df["NearestAnchorTanimoto"] = nearest_anchor_tanimoto
+    candidate_df["MaxAnchorTanimotoScore"] = nearest_anchor_tanimoto_scores(candidate_df["compound_iso_smiles"], anchor_fps)
+    candidate_df["AnchorCentroidTanimotoScore"] = centroid_tanimoto_scores(candidate_df["compound_iso_smiles"], anchor_fps)
 
     method_scores = {
         "Interpolation path": candidate_df["PathScore"].to_numpy(),
-        "Nearest anchor": candidate_df["NearestAnchorScore"].to_numpy(),
+        "Latent nearest anchor": candidate_df["NearestAnchorScore"].to_numpy(),
         "Predicted affinity": candidate_df["AffinityScore"].to_numpy(),
-        "Combined": candidate_df["CombinedScore"].to_numpy(),
+        "Nearest-anchor ECFP": candidate_df["MaxAnchorTanimotoScore"].to_numpy(),
+        "Anchor-centroid ECFP": candidate_df["AnchorCentroidTanimotoScore"].to_numpy(),
+        "Combined (exploratory)": candidate_df["CombinedScore"].to_numpy(),
     }
-    metrics_rows = []
     section_metrics: Dict[str, Any] = {
         "num_anchors": int(len(anchor_df)),
         "num_holdouts": int(len(holdout_df)),
@@ -2113,23 +2529,48 @@ def run_interpolation_section(ctx: PublicationContext) -> Dict[str, Any]:
         "family_similarity_threshold": float(EGFR_INTERP_FAMILY_SIMILARITY),
         "family_min_pchembl": float(EGFR_INTERP_MIN_PCHEMBL),
     }
-    for method_name, scores in method_scores.items():
-        method_metrics = retrieval_metrics_from_scores(labels, scores)
-        metrics_rows.append({"Method": method_name, **method_metrics})
-        for key, value in method_metrics.items():
-            metric_key = f"{method_name.lower().replace(' ', '_')}_{key.lower().replace('%', 'pct').replace('@', '_at_')}"
-            section_metrics[metric_key] = float(value)
-    metrics_df = pd.DataFrame(metrics_rows)
+    primary_methods = [
+        "Interpolation path",
+        "Latent nearest anchor",
+        "Predicted affinity",
+        "Nearest-anchor ECFP",
+        "Anchor-centroid ECFP",
+    ]
+    metrics_df, metrics_full_df, retrieval_payload = retrieval_metric_rows(
+        labels,
+        method_scores,
+        seed=ctx.base_config.seed,
+        methods_for_main_table=primary_methods,
+    )
+    section_metrics.update(retrieval_payload)
     save_table_outputs(
         metrics_df,
-        "table4_egfr_interpolation_metrics",
+        "table_egfr_retrieval_metrics",
         ctx.results_dir,
         (
-            "Interpolation-guided EGFR retrieval metrics. Six EGFR binder anchors defined a piecewise linear "
-            f"interpolation path in the target-conditioned ligand latent space. Remaining EGFR-family holdouts "
-            f"({len(holdout_df)}) were ranked against {len(zinc_df)} compounds from a local property-filtered lead-like "
-            "ZINC tranche library using path proximity, nearest-anchor proximity, predicted EGFR affinity, or a combined score."
+            "EGFR retrieval benchmark with explicit latent and ligand-only baselines. Six EGFR-family anchor binders "
+            f"defined the latent interpolation path, and the remaining {len(holdout_df)} EGFR-family holdouts were "
+            f"ranked against {len(zinc_df)} lead-like ZINC decoys. Reported metrics include AUROC, AUPRC, BEDROC20, "
+            "enrichment factors, and recovery at fixed ranked fractions, with bootstrap confidence intervals obtained "
+            "by resampling the candidate set. The primary table focuses on the core ranking methods, whereas the "
+            "exploratory combined score is deferred to the supplement to limit circularity."
         ),
+        latex_dataframe=metrics_df[["Method", "AUROC", "AUPRC", "BEDROC20", "Recovery@10%"]],
+    )
+    save_table_outputs(
+        metrics_full_df,
+        "table_s_egfr_retrieval_metrics_full",
+        ctx.results_dir,
+        (
+            "Full EGFR retrieval benchmark, including the exploratory combined path-plus-affinity score. Candidate "
+            f"set composition and bootstrap procedure match the primary retrieval table ({len(anchor_df)} anchors, "
+            f"{len(holdout_df)} holdouts, and {len(zinc_df)} ZINC decoys). The combined score is reported for "
+            "completeness because it was used to rank exploratory ZINC hits, but it is not emphasized in the primary "
+            "results because it reuses model-derived information in both latent geometry and affinity scoring."
+        ),
+        latex_dataframe=metrics_full_df[
+            ["Method", "AUROC", "AUPRC", "BEDROC20", "EF1%", "EF5%", "Recovery@5%", "Recovery@10%"]
+        ],
     )
 
     zinc_hits = candidate_df[candidate_df["panel_role"] == "zinc"].copy()
@@ -2159,12 +2600,15 @@ def run_interpolation_section(ctx: PublicationContext) -> Dict[str, Any]:
     zinc_hits_latex = zinc_hits_df.drop(columns=["smiles", "CombinedScore"]).copy()
     save_table_outputs(
         zinc_hits_df,
-        "table5_top_egfr_interpolation_hits",
+        "table_s_top_egfr_retrieval_hits",
         ctx.results_dir,
         (
-            f"Top {EGFR_INTERP_TOP_ZINC_HITS} EGFR retrieval hits from the local ZINC tranche library. Full SMILES are "
-            "retained in the CSV artifact, whereas the manuscript table reports the nearest anchor, latent-path distance, "
-            "predicted EGFR affinity, and medicinal chemistry heuristics."
+            f"Top {EGFR_INTERP_TOP_ZINC_HITS} exploratory ZINC candidates from the EGFR retrieval benchmark, ranked by "
+            "the combined interpolation-path-plus-affinity score. The table reports nearest-anchor identity, nearest-"
+            "anchor ECFP similarity, predicted EGFR affinity, latent path distance, and simple medicinal-chemistry "
+            "heuristics including QED, synthetic accessibility score, Lipinski pass status, and alert-free status. "
+            "Full SMILES strings are retained in the CSV artifact. These entries are prioritized follow-up candidates, "
+            "not experimentally validated EGFR actives."
         ),
         latex_dataframe=zinc_hits_latex,
     )
@@ -2200,8 +2644,11 @@ def run_interpolation_section(ctx: PublicationContext) -> Dict[str, Any]:
     }
     random_curve = fractions.copy()
 
-    fig, axes = plt.subplots(1, 2, figsize=(13.5, 5.6))
-    scatter_ax, recovery_ax = axes
+    fig = plt.figure(figsize=(17.2, 5.9))
+    grid = fig.add_gridspec(1, 3, width_ratios=[1.15, 1.0, 0.8])
+    scatter_ax = fig.add_subplot(grid[0, 0])
+    recovery_ax = fig.add_subplot(grid[0, 1])
+    hit_ax = fig.add_subplot(grid[0, 2])
     palette = {
         "Background ZINC": "#cbd5e1",
         "Holdout EGFR binders": "#2563eb",
@@ -2243,12 +2690,15 @@ def run_interpolation_section(ctx: PublicationContext) -> Dict[str, Any]:
 
     curve_colors = {
         "Interpolation path": "#1d4ed8",
-        "Nearest anchor": "#7c3aed",
+        "Latent nearest anchor": "#7c3aed",
         "Predicted affinity": "#ea580c",
-        "Combined": "#047857",
+        "Nearest-anchor ECFP": "#0f766e",
+        "Anchor-centroid ECFP": "#ca8a04",
+        "Combined (exploratory)": "#047857",
     }
-    for method_name, curve in recovery_curves.items():
-        recovery_ax.plot(fractions * 100.0, curve * 100.0, label=method_name, linewidth=2.5, color=curve_colors[method_name])
+    for method_name in primary_methods:
+        curve = recovery_curves[method_name]
+        recovery_ax.plot(fractions * 100.0, curve * 100.0, label=method_name, linewidth=2.2, color=curve_colors[method_name])
     recovery_ax.plot(fractions * 100.0, random_curve * 100.0, linestyle="--", color="#94a3b8", linewidth=1.5, label="Random")
     recovery_ax.set_title("Holdout EGFR binder recovery")
     recovery_ax.set_xlabel("Top ranked fraction of candidates (%)")
@@ -2257,13 +2707,31 @@ def run_interpolation_section(ctx: PublicationContext) -> Dict[str, Any]:
     recovery_ax.set_ylim(0.0, 100.0)
     recovery_ax.legend(frameon=True, loc="lower right")
 
-    combined_metrics = metrics_df.loc[metrics_df["Method"] == "Combined"].iloc[0]
+    top_display = zinc_hits_df.head(5).copy()
+    hit_ax.axis("off")
+    hit_ax.set_title("Top exploratory ZINC hits", fontsize=13)
+    y_positions = np.linspace(0.92, 0.16, len(top_display))
+    for y_position, (_, row) in zip(y_positions, top_display.iterrows()):
+        hit_ax.text(
+            0.02,
+            y_position,
+            (
+                f"Rank {int(row['Rank'])}: {row['zinc_id']}\n"
+                f"Pred. affinity {row['PredAffinity']:.2f} | QED {row['QED']:.2f} | SA {row['SA']:.2f}\n"
+                f"Nearest anchor {row['NearestAnchor']}"
+            ),
+            transform=hit_ax.transAxes,
+            fontsize=10.5,
+            va="top",
+        )
+
+    affinity_metrics = metrics_df.loc[metrics_df["Method"] == "Predicted affinity"].iloc[0]
     caption = textwrap.dedent(
         f"""
-        Interpolation-guided EGFR ligand retrieval. Six diverse EGFR-family anchor binders defined a minimum-spanning interpolation path in the target-conditioned ligand latent space. Left: PCA projection of the latent space, showing anchors, remaining EGFR-family holdout binders, background compounds from the local property-filtered lead-like ZINC tranche library, and the top ZINC hits selected by the combined path-plus-affinity score. Right: cumulative recovery of holdout EGFR binders when ranked against {len(zinc_df)} ZINC compounds. The combined score achieved AUROC = {combined_metrics['AUROC']:.3f}, AUPRC = {combined_metrics['AUPRC']:.3f}, and Recovery@10% = {combined_metrics['Recovery@10%']:.3f}, supporting interpolation-guided retrieval as a proof-of-concept local lead-prioritization workflow rather than an unconstrained de novo generation claim.
+        EGFR retrieval benchmark with explicit latent and ligand-only baselines. The left panel shows a two-dimensional projection of the target-conditioned ligand latent space for {len(anchor_df)} anchor binders, {len(holdout_df)} holdout EGFR-family binders, {len(zinc_df)} lead-like ZINC decoys, and the highest-ranked exploratory ZINC candidates. The middle panel reports cumulative recovery of holdout binders as the ranked candidate fraction increases, with a random baseline shown for reference. The right panel annotates the top exploratory ZINC candidates ranked by the combined score. Among model-derived methods, supervised affinity ranking was strongest (AUROC = {affinity_metrics['AUROC']:.3f}, AUPRC = {affinity_metrics['AUPRC']:.3f}, Recovery at top ten percent = {affinity_metrics['Recovery@10%']:.3f}), whereas interpolation-path ranking improved on latent nearest-anchor ranking but remained substantially weaker than the ECFP similarity controls, underscoring the chemically permissive nature of the EGFR panel.
         """
     ).strip()
-    save_figure(fig, "fig4_egfr_interpolation_retrieval", ctx.results_dir, caption)
+    save_figure(fig, "fig_egfr_retrieval_comparison", ctx.results_dir, caption)
 
     ctx.update_section_metrics("interpolation", section_metrics)
     return section_metrics
@@ -2323,7 +2791,95 @@ def collect_seeded_analogs(
     return generated_df.head(target_count).copy()
 
 
+def plot_generation_comparison_figure(comparison_df: pd.DataFrame, seed_reference: Mapping[str, float]) -> plt.Figure:
+    metric_specs = [
+        ("QED", "QED", seed_reference.get("QED")),
+        ("SA", "Synthetic accessibility", seed_reference.get("SA")),
+        ("tanimoto", "Similarity to dasatinib", 1.0),
+        ("PredAffinity", "Predicted EGFR affinity", seed_reference.get("PredAffinity")),
+    ]
+    generator_order = ["diffusion", "random_edit", "fragment_swap"]
+    label_map = {"diffusion": "Diffusion", "random_edit": "Random edit", "fragment_swap": "Fragment swap"}
+    generator_palette = {"diffusion": "#2563eb", "random_edit": "#ea580c", "fragment_swap": "#16a34a"}
+    fig = plt.figure(figsize=(16.0, 9.0))
+    grid = fig.add_gridspec(2, 3, height_ratios=[1.0, 0.92])
+    axes = [fig.add_subplot(grid[row, col]) for row in range(2) for col in range(3)]
+    rng = np.random.default_rng(1337)
+
+    for ax, (metric_name, title, seed_value) in zip(axes[:4], metric_specs):
+        value_groups = [
+            comparison_df.loc[comparison_df["generator"] == generator_name, metric_name].dropna().to_numpy(dtype=float)
+            for generator_name in generator_order
+        ]
+        boxplot_output = ax.boxplot(
+            value_groups,
+            positions=np.arange(1, len(generator_order) + 1, dtype=float),
+            widths=0.48,
+            patch_artist=True,
+            boxprops={"facecolor": "#dbeafe", "edgecolor": "#1f2937", "linewidth": 1.1},
+            medianprops={"color": "#111827", "linewidth": 1.4},
+            whiskerprops={"color": "#1f2937", "linewidth": 1.0},
+            capprops={"color": "#1f2937", "linewidth": 1.0},
+            flierprops={"marker": "o", "markersize": 0},
+        )
+        for patch, generator_name in zip(boxplot_output["boxes"], generator_order):
+            patch.set_facecolor(generator_palette[generator_name])
+            patch.set_alpha(0.32)
+        for x_position, generator_name, values in zip(np.arange(1, len(generator_order) + 1), generator_order, value_groups):
+            if values.size == 0:
+                continue
+            jitter = rng.uniform(-0.16, 0.16, size=values.size)
+            ax.scatter(
+                np.full(values.size, x_position, dtype=float) + jitter,
+                values,
+                color=generator_palette[generator_name],
+                alpha=0.35,
+                s=16,
+                zorder=3,
+            )
+        if seed_value is not None:
+            ax.axhline(float(seed_value), color="#111827", linestyle="--", linewidth=1.2)
+        ax.set_title(title, fontsize=14)
+        ax.set_xlabel("")
+        ax.set_xticks(np.arange(1, len(generator_order) + 1, dtype=float))
+        ax.set_xticklabels([label_map[name] for name in generator_order])
+        ax.tick_params(axis="x", rotation=18, labelsize=10)
+        ax.tick_params(axis="y", labelsize=10)
+
+    summary_df = (
+        comparison_df.groupby("generator")
+        .agg(
+            lipinski_pass_rate=("LipinskiPass", "mean"),
+            alert_free_rate=("AlertFree", "mean"),
+            n_unique_valid=("smiles", "nunique"),
+        )
+        .reindex(generator_order)
+        .reset_index()
+    )
+    axes[4].bar(
+        [label_map[name] for name in summary_df["generator"]],
+        summary_df["lipinski_pass_rate"],
+        color=[generator_palette[name] for name in summary_df["generator"]],
+    )
+    axes[4].set_ylim(0.0, 1.05)
+    axes[4].set_title("Lipinski pass rate", fontsize=14)
+    axes[4].tick_params(axis="x", rotation=18, labelsize=10)
+
+    axes[5].bar(
+        [label_map[name] for name in summary_df["generator"]],
+        summary_df["n_unique_valid"],
+        color=[generator_palette[name] for name in summary_df["generator"]],
+    )
+    axes[5].set_title("Unique valid analogs", fontsize=14)
+    axes[5].tick_params(axis="x", rotation=18, labelsize=10)
+    fig.suptitle("EGFR-conditioned local analog proposal benchmark", fontsize=18, y=1.01)
+    fig.tight_layout()
+    return fig
+
+
 def run_generation_section(ctx: PublicationContext) -> Dict[str, Any]:
+    import run_generation_validation as gen_validation
+
     egfr_sequence = fetch_egfr_sequence(ctx)
     dasatinib_smiles = fetch_dasatinib_smiles(ctx)
     seed_mol = Chem.MolFromSmiles(dasatinib_smiles)
@@ -2333,39 +2889,41 @@ def run_generation_section(ctx: PublicationContext) -> Dict[str, Any]:
     diffusion_config = clone_config_for_results(ctx.base_config, ctx.results_dir, ctx.base_config.profile_name, device=ctx.args.device)
     diffusion_config.checkpoint_dir = ctx.base_config.checkpoint_dir
     diffusion_config.ensemble_size = ctx.base_config.ensemble_size
-    checkpoint_paths = ensemble_checkpoint_paths(diffusion_config)
-    if not all(path.exists() for path in checkpoint_paths):
-        raise FileNotFoundError(
-            "Generation requires an existing diffusion-trained checkpoint. Missing: "
-            + ", ".join(str(path) for path in checkpoint_paths if not path.exists())
-        )
-    print("[generation] using the existing diffusion-trained base checkpoint", flush=True)
-    models, _ = load_publication_ensemble(diffusion_config)
-    isolated_config, graph_cache, protein_cache = build_isolated_caches(
-        diffusion_config,
-        [dasatinib_smiles],
-        [egfr_sequence],
-        str(ctx.results_dir / "cache" / "generation"),
-        force_rebuild=ctx.args.force_refresh,
-        cache_prefix="generation",
-    )
-    pair_df = pd.DataFrame([{"compound_iso_smiles": dasatinib_smiles, "target_sequence": egfr_sequence}])
-    loader = make_unlabeled_prediction_loader(pair_df, graph_cache, protein_cache, isolated_config)
-    batch = next(iter(loader))
-    batch = {key: value.to(runtime_device(isolated_config)) if isinstance(value, torch.Tensor) else value for key, value in batch.items()}
-
     rng = np.random.default_rng(ctx.base_config.seed)
-    generated_df = collect_seeded_analogs(
-        models,
-        batch,
-        seed_mol,
+    random_rows = gen_validation.generate_random_edit(seed_mol, GENERATION_TARGET_ANALOGS, rng=rng)
+    fragment_rows = gen_validation.generate_fragment_swap(seed_mol, GENERATION_TARGET_ANALOGS, rng=rng)
+    diffusion_rows = gen_validation.generate_diffusion(
+        dasatinib_smiles,
+        egfr_sequence,
+        diffusion_config,
+        GENERATION_TARGET_ANALOGS,
         rng=rng,
-        target_count=GENERATION_TARGET_ANALOGS,
-        noise_sigma=GENERATION_NOISE_SIGMA,
-        perturbations_per_draw=GENERATION_PERTURBATIONS_PER_DRAW,
-        max_attempts=GENERATION_MAX_ATTEMPTS,
+        cache_root=str(ctx.results_dir / "generation_cache"),
+        force_rebuild=ctx.args.force_refresh,
     )
-    affinity_df = generated_df[["smiles"]].rename(columns={"smiles": "compound_iso_smiles"})
+    comparison_df = pd.DataFrame(diffusion_rows + random_rows + fragment_rows).drop_duplicates(subset=["generator", "smiles"]).reset_index(drop=True)
+    if comparison_df.empty:
+        raise RuntimeError("Generation comparison did not yield any molecules.")
+
+    enriched_rows: List[Dict[str, Any]] = []
+    for row in comparison_df.to_dict(orient="records"):
+        mol = Chem.MolFromSmiles(str(row["smiles"]))
+        if mol is None:
+            continue
+        props = molecule_properties(mol)
+        merged = dict(row)
+        merged.update(
+            {
+                "MW": props["MW"],
+                "cLogP": props["cLogP"],
+                "AlertFree": props["AlertFree"],
+                "LipinskiPass": props["LipinskiPass"],
+            }
+        )
+        enriched_rows.append(merged)
+    comparison_df = pd.DataFrame(enriched_rows)
+
+    affinity_df = comparison_df[["smiles"]].rename(columns={"smiles": "compound_iso_smiles"})
     affinity_df["target_sequence"] = egfr_sequence
     main_config = clone_config_for_results(ctx.base_config, ctx.results_dir, ctx.base_config.profile_name, device=ctx.args.device)
     main_config.checkpoint_dir = ctx.base_config.checkpoint_dir
@@ -2379,8 +2937,85 @@ def run_generation_section(ctx: PublicationContext) -> Dict[str, Any]:
         cache_prefix="generation_affinity",
         progress_label="EGFR analog affinity scoring",
     )
-    generated_df["PredAffinity"] = predicted_affinity
-    generated_df = rank_generated_analogs(generated_df)
+    comparison_df["PredAffinity"] = predicted_affinity
+    comparison_df = comparison_df.sort_values(["generator", "PredAffinity"], ascending=[True, False]).reset_index(drop=True)
+    comparison_df.to_csv(ctx.results_dir / "generation_comparison.csv", index=False)
+
+    seed_reference_df = pd.DataFrame([{"compound_iso_smiles": dasatinib_smiles, "target_sequence": egfr_sequence}])
+    seed_pred_affinity = float(
+        score_pairs(
+            main_config,
+            seed_reference_df,
+            ctx.results_dir / "cache" / "generation_seed_affinity",
+            cache_prefix="generation_seed_affinity",
+            progress_label="EGFR seed affinity scoring",
+        )[0]
+    )
+    seed_reference = molecule_properties(seed_mol)
+    seed_reference["PredAffinity"] = seed_pred_affinity
+
+    summary_rows = []
+    for generator_name, group in comparison_df.groupby("generator"):
+        summary_rows.append(
+            {
+                "Generator": generator_name,
+                "Unique valid analogs": int(group["smiles"].nunique()),
+                "QED mean": float(group["QED"].mean()),
+                "QED SD": safe_std(group["QED"].to_numpy()),
+                "SA mean": float(group["SA"].mean()),
+                "SA SD": safe_std(group["SA"].to_numpy()),
+                "Tanimoto mean": float(group["tanimoto"].mean()),
+                "Tanimoto SD": safe_std(group["tanimoto"].to_numpy()),
+                "PredAffinity mean": float(group["PredAffinity"].mean()),
+                "PredAffinity SD": safe_std(group["PredAffinity"].to_numpy()),
+                "Lipinski pass rate": float(group["LipinskiPass"].mean()),
+                "Alert-free rate": float(group["AlertFree"].mean()),
+            }
+        )
+    summary_rows.append(
+        {
+            "Generator": "seed_reference",
+            "Unique valid analogs": 1,
+            "QED mean": seed_reference["QED"],
+            "QED SD": 0.0,
+            "SA mean": seed_reference["SA"],
+            "SA SD": 0.0,
+            "Tanimoto mean": 1.0,
+            "Tanimoto SD": 0.0,
+            "PredAffinity mean": seed_reference["PredAffinity"],
+            "PredAffinity SD": 0.0,
+            "Lipinski pass rate": float(seed_reference["LipinskiPass"]),
+            "Alert-free rate": float(seed_reference["AlertFree"]),
+        }
+    )
+    summary_df = pd.DataFrame(summary_rows)
+    save_table_outputs(
+        summary_df,
+        "table_generation_comparison_summary",
+        ctx.results_dir,
+        (
+            "Comparative EGFR local-design benchmark summary. Each row aggregates unique valid molecules produced by "
+            "one generator and reports mean and standard deviation for QED, synthetic accessibility, Tanimoto "
+            "similarity to dasatinib, and predicted EGFR affinity, together with Lipinski and alert-free pass rates. "
+            "All candidates were rescored with the same DeepDTA-iBAM checkpoint so that the comparison reflects "
+            "generator behavior rather than differences in scoring models."
+        ),
+        latex_dataframe=summary_df[
+            [
+                "Generator",
+                "Unique valid analogs",
+                "QED mean",
+                "SA mean",
+                "Tanimoto mean",
+                "PredAffinity mean",
+                "Lipinski pass rate",
+            ]
+        ],
+    )
+
+    diffusion_df = comparison_df[comparison_df["generator"] == "diffusion"].copy()
+    diffusion_df = rank_generated_analogs(diffusion_df)
+    generated_df = diffusion_df.reset_index(drop=True)
     write_text(
         ctx.results_dir / "generated_egfr_analogs_100.csv",
         generated_df.to_csv(index=False),
@@ -2390,7 +3025,28 @@ def run_generation_section(ctx: PublicationContext) -> Dict[str, Any]:
         top20_df,
         "table2_top20_generated_compounds",
         ctx.results_dir,
-        "Target-conditioned seeded molecular design results. The top 20 dasatinib-like EGFR-conditioned designed analogs are ranked by Lipinski compliance, alert-free status, QED, synthetic accessibility score, and predicted KIBA affinity.",
+        "Top 20 diffusion-generated EGFR-conditioned analogs from the local-design benchmark. Rows are ordered by the "
+        "same multi-criterion ranking used in the supplementary gallery: Lipinski pass status, alert-free status, "
+        "descending QED, ascending synthetic accessibility score, and descending predicted EGFR affinity. The CSV "
+        "artifact retains the full set of 100 unique valid diffusion proposals.",
+    )
+
+    comparison_fig = plot_generation_comparison_figure(comparison_df, seed_reference)
+    save_figure(
+        comparison_fig,
+        "fig_generation_comparison",
+        ctx.results_dir,
+        (
+            f"Comparative EGFR local-design benchmark around the dasatinib seed. Diffusion proposals, random atom "
+            "edits, and fragment swaps were decoded, filtered to unique valid molecules, and rescored with the shared "
+            "DeepDTA-iBAM checkpoint; dashed horizontal lines denote the seed-molecule reference value in each "
+            "distribution panel. The lower panels summarize Lipinski pass rates and the number of unique valid "
+            f"analogs recovered per generator. Diffusion produced the highest mean predicted affinity "
+            f"({section_metrics['diffusion_mean_pred_affinity']:.3f} versus {section_metrics['random_edit_mean_pred_affinity']:.3f} "
+            f"for random edits, {section_metrics['fragment_swap_mean_pred_affinity']:.3f} for fragment swaps, and "
+            f"{section_metrics['seed_pred_affinity']:.3f} for the seed) but remained less favorable on rule-based "
+            "medicinal-chemistry filters, supporting a measured local-design claim rather than blanket superiority."
+        ),
     )
 
     mols = [seed_mol] + [Chem.MolFromSmiles(smiles) for smiles in top20_df["smiles"][:GENERATION_TOP_ANALOGS]]
@@ -2399,24 +3055,25 @@ def run_generation_section(ctx: PublicationContext) -> Dict[str, Any]:
         for rank, (_, row) in enumerate(top20_df.iterrows())
     ]
     draw_options = rdMolDraw2D.MolDrawOptions()
-    draw_options.legendFontSize = 24
-    draw_options.baseFontSize = 0.7
-    draw_options.padding = 0.08
-    draw_options.bondLineWidth = 2
+    draw_options.legendFontSize = 38
+    draw_options.baseFontSize = 1.05
+    draw_options.fixedFontSize = 16
+    draw_options.padding = 0.075
+    draw_options.bondLineWidth = 2.6
     grid_image = Draw.MolsToGridImage(
         mols,
         legends=legends,
         molsPerRow=4,
-        subImgSize=(420, 320),
+        subImgSize=(560, 440),
         drawOptions=draw_options,
     )
-    fig, ax = plt.subplots(figsize=(20, 16))
+    fig, ax = plt.subplots(figsize=(20, 22))
     ax.imshow(np.asarray(grid_image))
     ax.axis("off")
-    ax.set_title("EGFR-conditioned seeded generation of dasatinib-like analogs", fontsize=20, pad=18)
+    ax.set_title("EGFR-conditioned seeded generation of dasatinib-like analogs", fontsize=30, pad=22, fontweight="normal")
     caption = textwrap.dedent(
         """
-        Target-conditioned seeded molecular drug design using generative AI. Repeated stochastic diffusion draws with slight low-noise perturbations were decoded under a fixed dasatinib graph topology until 100 unique valid designed analogs were obtained. The displayed panel shows the top 20 candidate molecules ranked by Lipinski compliance, alert-free status, QED, synthetic accessibility score, and predicted KIBA affinity against EGFR.
+        Supplementary gallery of diffusion-generated EGFR-conditioned analogs around the dasatinib seed. The generator repeatedly perturbed the model output at low noise under a fixed seed topology until 100 unique valid analogs were obtained. The displayed panel shows the top 20 candidates after ranking by Lipinski pass status, alert-free status, descending QED, ascending synthetic accessibility score, and predicted EGFR affinity.
         """
     ).strip()
     save_figure(fig, "fig3_egfr_dasatinib_generation", ctx.results_dir, caption)
@@ -2426,6 +3083,10 @@ def run_generation_section(ctx: PublicationContext) -> Dict[str, Any]:
         "num_ranked_top_analogs": int(len(top20_df)),
         "best_qed": float(generated_df["QED"].max()),
         "best_pred_affinity": float(generated_df["PredAffinity"].max()),
+        "diffusion_mean_pred_affinity": float(comparison_df.loc[comparison_df["generator"] == "diffusion", "PredAffinity"].mean()),
+        "random_edit_mean_pred_affinity": float(comparison_df.loc[comparison_df["generator"] == "random_edit", "PredAffinity"].mean()),
+        "fragment_swap_mean_pred_affinity": float(comparison_df.loc[comparison_df["generator"] == "fragment_swap", "PredAffinity"].mean()),
+        "seed_pred_affinity": float(seed_reference["PredAffinity"]),
         "generation_noise_sigma": float(GENERATION_NOISE_SIGMA),
     }
     ctx.update_section_metrics("generation", metrics)
@@ -2440,59 +3101,122 @@ def prepare_ablation_config(ctx: PublicationContext) -> ExperimentConfig:
 
 
 def run_ablation_section(ctx: PublicationContext) -> Dict[str, Any]:
-    main_config = clone_config_for_results(ctx.base_config, ctx.results_dir, ctx.base_config.profile_name, device=ctx.args.device)
-    main_config = prepare_scaffold_config(main_config, ctx.results_dir)
-    main_config.checkpoint_dir = ctx.base_config.checkpoint_dir
-    ablation_config = prepare_ablation_config(ctx)
-    if not all(path.exists() for path in ensemble_checkpoint_paths(ablation_config)):
-        print("[ablation] training no-fusion scaffold-split ensemble", flush=True)
-        resume_ablation = Path(ablation_config.checkpoint_dir).exists()
-        train_ensemble(ablation_config, resume=resume_ablation)
+    ablation_candidates = [
+        ctx.results_dir / "ablation_table_wide.csv",
+        ctx.results_dir / "ablation_table.csv",
+    ]
+    ablation_csv = next((path for path in ablation_candidates if path.exists()), None)
+    if ablation_csv is None:
+        raise FileNotFoundError(
+            f"Ablation summary not found at any of: {', '.join(str(path) for path in ablation_candidates)}. "
+            "This publication workflow assumes aggregate ablation outputs already exist."
+        )
+
+    raw_source_df = pd.read_csv(ablation_csv)
+    if {"model_name", "split_type", "metric", "mean", "sd"}.issubset(raw_source_df.columns):
+        raw_df = raw_source_df.copy()
+    elif {"model_name", "split_type"}.issubset(raw_source_df.columns):
+        long_rows: List[Dict[str, Any]] = []
+        for _, row in raw_source_df.iterrows():
+            for metric_name in ("RMSE", "MAE", "CI", "Pearson", "Spearman"):
+                mean_col = f"{metric_name}_mean"
+                sd_col = f"{metric_name}_sd"
+                if mean_col not in row.index or sd_col not in row.index:
+                    continue
+                long_rows.append(
+                    {
+                        "model_name": row["model_name"],
+                        "split_type": row["split_type"],
+                        "metric": metric_name,
+                        "mean": float(row[mean_col]),
+                        "sd": float(row[sd_col]),
+                    }
+                )
+        raw_df = pd.DataFrame(long_rows)
     else:
-        print("[ablation] using existing no-fusion ensemble checkpoints", flush=True)
-
-    print("[ablation] evaluating main and no-fusion ensembles", flush=True)
-    main_metrics = evaluate_main_ensemble(main_config)
-    ablation_metrics = evaluate_main_ensemble(ablation_config)
-    write_json(
-        ctx.results_dir / f"{ctx.base_config.profile_name}_scaffold_eval_from_ablation.json",
-        {key: value for key, value in main_metrics.items() if key not in {"predictions", "targets"}},
+        raise ValueError(
+            f"Ablation source at {ablation_csv} does not have a recognized schema: {list(raw_source_df.columns)}"
+        )
+    label_map = {
+        "abl_base": "Backbone only",
+        "abl_no_fusion": "No cross-attention",
+        "abl_no_ranking": "No ranking loss",
+        "abl_no_diffusion": "No diffusion head",
+        "abl_full": "DeepDTA-iBAM",
+    }
+    metric_label_map = {
+        "RMSE": "RMSE",
+        "MAE": "MAE",
+        "CI": "CI",
+        "Pearson": "Pearson",
+        "Spearman": "Spearman",
+    }
+    display_rows: List[Dict[str, Any]] = []
+    for (model_name, split_type), group in raw_df.groupby(["model_name", "split_type"]):
+        record: Dict[str, Any] = {
+            "Variant": label_map.get(model_name, model_name),
+            "Split": str(split_type).capitalize(),
+        }
+        for _, metric_row in group.iterrows():
+            metric_name = metric_label_map.get(str(metric_row["metric"]), str(metric_row["metric"]))
+            record[f"{metric_name} mean"] = float(metric_row["mean"])
+            record[f"{metric_name} sd"] = float(metric_row["sd"])
+            record[metric_name] = f"{float(metric_row['mean']):.3f} ± {float(metric_row['sd']):.3f}"
+        display_rows.append(record)
+    display_df = pd.DataFrame(display_rows).sort_values(["Split", "Variant"]).reset_index(drop=True)
+    table_columns = ["Variant", "Split", "RMSE", "MAE", "CI", "Pearson", "Spearman"]
+    save_table_outputs(
+        display_df,
+        "ablation_table",
+        ctx.results_dir,
+        (
+            "Ablation summary across standard and scaffold KIBA splits. Values are reported as mean ± standard "
+            "deviation across three archived training seeds from the precomputed aggregate ablation table. RMSE and "
+            "MAE are lower-is-better metrics, whereas CI, Pearson, and Spearman are higher-is-better metrics. The "
+            "table isolates how cross-attention, ranking loss, and the diffusion head affected predictive "
+            "performance without additional retraining."
+        ),
+        latex_dataframe=display_df[table_columns],
     )
-    write_json(
-        ctx.results_dir / "max_rmse_cluster_no_fusion_scaffold_eval.json",
-        {key: value for key, value in ablation_metrics.items() if key not in {"predictions", "targets"}},
-    )
-    ci_delta = float(main_metrics["CI"] - ablation_metrics["CI"])
-    bootstrap = paired_bootstrap_metric_delta(
-        main_metrics["targets"],
-        np.asarray(main_metrics["predictions"]),
-        np.asarray(ablation_metrics["predictions"]),
-        lambda truth, preds: concordance_index(truth, preds, max_samples=len(truth)),
-        n_boot=400,
-        seed=ctx.base_config.seed,
-    )
 
-    fig, ax = plt.subplots(figsize=(7, 5))
-    ci_values = [main_metrics["CI"], ablation_metrics["CI"]]
-    ax.bar(["DeepDTA-iBAM", "No fusion"], ci_values, color=["#1d4ed8", "#dc2626"])
-    ax.set_ylim(0.0, 1.0)
-    ax.set_ylabel("Concordance index")
-    ax.set_title("Cross-attention ablation on scaffold split")
-    ax.text(0.5, max(ci_values) + 0.02, f"Delta CI = {ci_delta:.4f}", ha="center", va="bottom")
-    caption = "Figure 4. Scaffold-split concordance index comparison between the full DeepDTA-iBAM ensemble and a matched no-fusion ablation, with the CI drop summarizing the contribution of bidirectional cross-attention."
-    save_figure(fig, "fig4_ablation_ci", ctx.results_dir, caption)
+    scaffold_ci = raw_df[(raw_df["split_type"] == "scaffold") & (raw_df["metric"] == "CI")].copy()
+    scaffold_ci["label"] = scaffold_ci["model_name"].map(label_map).fillna(scaffold_ci["model_name"])
+    scaffold_ci = scaffold_ci.sort_values("mean", ascending=False).reset_index(drop=True)
 
+    fig, ax = plt.subplots(figsize=(8.5, 5.2))
+    ax.bar(
+        scaffold_ci["label"],
+        scaffold_ci["mean"],
+        yerr=scaffold_ci["sd"],
+        color=["#2563eb" if label == "DeepDTA-iBAM" else "#94a3b8" for label in scaffold_ci["label"]],
+        capsize=4,
+    )
+    ax.set_ylim(0.68, 0.80)
+    ax.set_ylabel("Scaffold-split CI")
+    ax.set_title("Precomputed scaffold-split ablation summary")
+    ax.tick_params(axis="x", rotation=20)
+    caption = (
+        "Scaffold-split ablation summary from the archived three-seed aggregate results. Bars show mean scaffold-"
+        "split concordance index with one-standard-deviation error bars for the full model and key ablated variants. "
+        "Higher CI indicates better ranking agreement under chemistry shift. The full DeepDTA-iBAM configuration "
+        "remained competitive, but the no-diffusion-head and backbone-only variants slightly exceeded it on this "
+        "summary metric, reinforcing a cautious interpretation of workflow-level gains."
+    )
+    save_figure(fig, "fig_ablation_scaffold_summary", ctx.results_dir, caption)
+
+    full_standard = raw_df[(raw_df["model_name"] == "abl_full") & (raw_df["split_type"] == "standard")]
+    full_scaffold = raw_df[(raw_df["model_name"] == "abl_full") & (raw_df["split_type"] == "scaffold")]
+    best_standard_rmse = raw_df[(raw_df["split_type"] == "standard") & (raw_df["metric"] == "RMSE")].sort_values("mean").iloc[0]
+    best_scaffold_ci = raw_df[(raw_df["split_type"] == "scaffold") & (raw_df["metric"] == "CI")].sort_values("mean", ascending=False).iloc[0]
     metrics = {
-        "main_CI": float(main_metrics["CI"]),
-        "main_RMSE": float(main_metrics["RMSE"]),
-        "main_MAE": float(main_metrics["MAE"]),
-        "ablation_CI": float(ablation_metrics["CI"]),
-        "ablation_RMSE": float(ablation_metrics["RMSE"]),
-        "ablation_MAE": float(ablation_metrics["MAE"]),
-        "delta_CI": ci_delta,
-        "bootstrap_delta_CI": bootstrap["delta"],
-        "bootstrap_delta_CI_low": bootstrap["ci_low"],
-        "bootstrap_delta_CI_high": bootstrap["ci_high"],
+        "standard_full_ci": float(full_standard.loc[full_standard["metric"] == "CI", "mean"].iloc[0]),
+        "standard_full_rmse": float(full_standard.loc[full_standard["metric"] == "RMSE", "mean"].iloc[0]),
+        "scaffold_full_ci": float(full_scaffold.loc[full_scaffold["metric"] == "CI", "mean"].iloc[0]),
+        "scaffold_full_rmse": float(full_scaffold.loc[full_scaffold["metric"] == "RMSE", "mean"].iloc[0]),
+        "best_standard_rmse_variant": label_map.get(str(best_standard_rmse["model_name"]), str(best_standard_rmse["model_name"])),
+        "best_standard_rmse": float(best_standard_rmse["mean"]),
+        "best_scaffold_ci_variant": label_map.get(str(best_scaffold_ci["model_name"]), str(best_scaffold_ci["model_name"])),
+        "best_scaffold_ci": float(best_scaffold_ci["mean"]),
     }
     ctx.update_section_metrics("ablation", metrics)
     return metrics
@@ -2524,14 +3248,53 @@ def run_diagnostics_section(ctx: PublicationContext) -> Dict[str, Any]:
     axes[1].set_title("Residuals versus observed KIBA")
     axes[1].set_xlabel("Observed KIBA")
     axes[1].set_ylabel("Residual")
-    caption = "Figure 5. Residual diagnostics for the one-member DeepDTA-iBAM standard-KIBA test evaluation. Bland-Altman analysis highlights bias and dispersion, while the residual-versus-KIBA plot reveals whether errors drift systematically across the affinity range."
+    caption = (
+        f"Residual diagnostics for the canonical standard-split KIBA test evaluation (n = {len(targets):,}). The left "
+        "panel shows a Bland-Altman analysis of predicted and observed KIBA scores with the mean bias and 95 percent "
+        "limits of agreement, and the right panel shows residuals plotted against the observed KIBA value to assess "
+        f"heteroscedasticity and systematic drift. The mean bias was {diff_mean:.3f}, with limits of agreement from "
+        f"{loa_low:.3f} to {loa_high:.3f}, indicating approximately centered errors but substantial single-point "
+        "dispersion."
+    )
     save_figure(fig, "fig5_residual_diagnostics", ctx.results_dir, caption)
+    split_artifacts = prepare_split_artifacts(
+        train_file=ctx.base_config.train_file,
+        val_file=ctx.base_config.val_file,
+        test_file=ctx.base_config.test_file,
+        mode="standard",
+        output_root=str(ctx.results_dir / "generated_splits"),
+        seed=ctx.base_config.seed,
+    )
+    overlap_summary = split_artifacts.summary
+    overlap_rows = [
+        {"Subset": "Train", "Rows": overlap_summary["rows"]["train"], "Unique compounds": overlap_summary["unique_compounds"]["train"], "Unique targets": overlap_summary["unique_targets"]["train"]},
+        {"Subset": "Validation", "Rows": overlap_summary["rows"]["val"], "Unique compounds": overlap_summary["unique_compounds"]["val"], "Unique targets": overlap_summary["unique_targets"]["val"]},
+        {"Subset": "Test", "Rows": overlap_summary["rows"]["test"], "Unique compounds": overlap_summary["unique_compounds"]["test"], "Unique targets": overlap_summary["unique_targets"]["test"]},
+        {"Subset": "Train/Validation overlap", "Rows": np.nan, "Unique compounds": overlap_summary["compound_overlap"]["train_val"], "Unique targets": overlap_summary["target_overlap"]["train_val"]},
+        {"Subset": "Train/Test overlap", "Rows": np.nan, "Unique compounds": overlap_summary["compound_overlap"]["train_test"], "Unique targets": overlap_summary["target_overlap"]["train_test"]},
+        {"Subset": "Validation/Test overlap", "Rows": np.nan, "Unique compounds": overlap_summary["compound_overlap"]["val_test"], "Unique targets": overlap_summary["target_overlap"]["val_test"]},
+    ]
+    save_table_outputs(
+        pd.DataFrame(overlap_rows),
+        "table_s_standard_split_overlap",
+        ctx.results_dir,
+        (
+            "Overlap summary for the canonical standard KIBA partition. Rows list total observations, unique "
+            "compounds, and unique targets in each subset, followed by pairwise overlap counts between subsets. The "
+            f"train and test subsets share {int(overlap_summary['compound_overlap']['train_test']):,} compounds and "
+            f"{int(overlap_summary['target_overlap']['train_test']):,} targets, making explicit that the standard "
+            "split permits substantial entity reuse and therefore represents an easier setting than chemistry-aware "
+            "or scaffold-based evaluation."
+        ),
+    )
     summary = {
         "bias_mean": diff_mean,
         "bias_sd": diff_sd,
         "loa_low": loa_low,
         "loa_high": loa_high,
         "reported_split": "standard test",
+        "train_test_compound_overlap": int(overlap_summary["compound_overlap"]["train_test"]),
+        "train_test_target_overlap": int(overlap_summary["target_overlap"]["train_test"]),
     }
     ctx.update_section_metrics("diagnostics", summary)
     return summary
@@ -2606,7 +3369,47 @@ def run_benchmark_section(ctx: PublicationContext) -> Dict[str, Any]:
     standard_eval_path = ctx.results_dir / f"{ctx.base_config.profile_name}_member{ctx.base_config.ensemble_size}_standard_eval.json"
     main_standard = evaluate_config_on_split(ctx.base_config, results_dir=ctx.results_dir, split_mode="standard", split_name="test")
     write_json(standard_eval_path, {"test": {key: value for key, value in main_standard.items() if key not in {"predictions", "targets"}}})
+    raw_eval_df = pd.DataFrame(
+        {
+            "target": np.asarray(main_standard["targets"], dtype=float),
+            "prediction": np.asarray(main_standard["predictions"], dtype=float),
+        }
+    )
+    raw_eval_df["residual"] = raw_eval_df["prediction"] - raw_eval_df["target"]
+    raw_eval_df.to_csv(
+        ctx.results_dir / f"{ctx.base_config.profile_name}_member{ctx.base_config.ensemble_size}_standard_predictions.csv",
+        index=False,
+    )
     main_mse = float(main_standard["RMSE"]) ** 2
+    bootstrap = bootstrap_regression_metrics(
+        raw_eval_df["target"].to_numpy(),
+        raw_eval_df["prediction"].to_numpy(),
+        seed=ctx.base_config.seed,
+        n_boot=600,
+    )
+    bootstrap_rows = [
+        {
+            "Metric": metric_name,
+            "Value": stats["value"],
+            "CI low": stats["ci_low"],
+            "CI high": stats["ci_high"],
+        }
+        for metric_name, stats in bootstrap.items()
+    ]
+    save_metrics_table(
+        bootstrap_rows,
+        "table_s_standard_eval_bootstrap",
+        ctx.results_dir,
+        (
+            f"Bootstrap uncertainty for the single-checkpoint standard-split evaluation. Metrics were recomputed over "
+            f"600 bootstrap resamples of the held-out prediction pairs (n = {len(raw_eval_df):,}) to obtain "
+            "nonparametric 95 percent confidence intervals for RMSE, MAE, CI, Pearson correlation, and the "
+            "coefficient of determination. These intervals quantify local evaluation uncertainty for the reported "
+            "DeepDTA-iBAM row and should be interpreted separately from between-paper differences in the contextual "
+            "benchmark table."
+        ),
+        latex_columns=["Metric", "Value", "CI low", "CI high"],
+    )
 
     rows = [
         {
@@ -2640,9 +3443,13 @@ def run_benchmark_section(ctx: PublicationContext) -> Dict[str, Any]:
         "table1_benchmark",
         ctx.results_dir,
         (
-            "Standard-split KIBA benchmark. Regression-only CI and MSE values are compared against primary-source "
-            "standard-split affinity models. The DeepDTA-iBAM row reports the local evaluation of the integrated "
-            "model, whereas literature rows reproduce the directly comparable values reported by the cited primary studies."
+            f"Contextual standard-split KIBA benchmark. The first row reports the locally rerun single-checkpoint "
+            f"DeepDTA-iBAM evaluation on the canonical test partition (CI = {main_standard['CI']:.3f}, MSE = "
+            f"{main_mse:.3f}), whereas the remaining rows are primary-source values reproduced from the cited "
+            "standard-split literature. CI denotes concordance index, for which higher values are better, and MSE "
+            "denotes mean squared error, for which lower values are better. Because the literature models were not "
+            "rerun in the present environment, the table is intended to situate the local result within prior reports "
+            "rather than establish a controlled leaderboard."
         ),
         latex_dataframe=benchmark_display_df[["model", "CI", "MSE", "notes"]],
     )
@@ -2652,6 +3459,12 @@ def run_benchmark_section(ctx: PublicationContext) -> Dict[str, Any]:
         "standard_mse_main": main_mse,
         "standard_rmse_main": float(main_standard["RMSE"]),
         "standard_mae_main": float(main_standard["MAE"]),
+        "standard_r2_main": float(main_standard.get("R2", bootstrap["R2"]["value"])),
+        "standard_pearson_main": float(main_standard.get("Pearson", bootstrap["Pearson"]["value"])),
+        "standard_ci_low": float(bootstrap["CI"]["ci_low"]),
+        "standard_ci_high": float(bootstrap["CI"]["ci_high"]),
+        "standard_rmse_low": float(bootstrap["RMSE"]["ci_low"]),
+        "standard_rmse_high": float(bootstrap["RMSE"]["ci_high"]),
     }
     ctx.update_section_metrics("benchmark", metrics)
     return metrics
@@ -2663,11 +3476,12 @@ def latex_figure_block(
     caption_file: str,
     width: str = "0.98\\linewidth",
     fallback: str = "Figure caption unavailable.",
+    placement: str = "H",
 ) -> str:
     caption = latex_bold_lead_sentence(read_caption(results_dir, caption_file, fallback))
     return textwrap.dedent(
         f"""
-        \\begin{{figure}}[H]
+        \\begin{{figure}}[{placement}]
         \\centering
         \\IfFileExists{{results/{stem}.pdf}}{{\\includegraphics[width={width}]{{results/{stem}.pdf}}}}{{\\fbox{{Pending figure}}}}
         \\caption{{{caption}}}
@@ -2708,35 +3522,30 @@ def latex_table_block(
     fallback: str = "Table caption unavailable.",
 ) -> str:
     caption = latex_bold_lead_sentence(read_caption(results_dir, caption_file, fallback))
-    if stem in {"table2_top20_generated_compounds", "table5_top_egfr_interpolation_hits"}:
+    if stem in {
+        "table2_top20_generated_compounds",
+        "table4_egfr_interpolation_metrics",
+        "table5_top_egfr_interpolation_hits",
+        "table_s_egfr_retrieval_metrics_full",
+        "table_s_interpretability_per_complex",
+        "table_s_top_egfr_retrieval_hits",
+    }:
         return textwrap.dedent(
             f"""
-            \\begin{{table}}[t]
-            \\centering
+            \\begin{{smalltable}}
             \\caption{{{caption}}}
             \\label{{{label}}}
-            \\begingroup
-            \\setlength{{\\tabcolsep}}{{2pt}}
-            \\renewcommand{{\\arraystretch}}{{1.0}}
-            \\scriptsize
             \\IfFileExists{{results/{stem}.tex}}{{\\resizebox{{\\linewidth}}{{!}}{{\\input{{results/{stem}.tex}}}}}}{{\\fbox{{Pending table}}}}
-            \\endgroup
-            \\end{{table}}
+            \\end{{smalltable}}
             """
         ).strip()
     return textwrap.dedent(
         f"""
-        \\begin{{table}}[t]
-        \\centering
+        \\begin{{smalltable}}
         \\caption{{{caption}}}
         \\label{{{label}}}
-        \\begingroup
-        \\setlength{{\\tabcolsep}}{{4pt}}
-        \\renewcommand{{\\arraystretch}}{{1.05}}
-        \\footnotesize
         \\IfFileExists{{results/{stem}.tex}}{{\\input{{results/{stem}.tex}}}}{{\\fbox{{Pending table}}}}
-        \\endgroup
-        \\end{{table}}
+        \\end{{smalltable}}
         """
     ).strip()
 
@@ -2798,6 +3607,28 @@ def build_references_bib() -> str:
           doi = {10.1093/bib/bbu010}
         }
 
+        @article{bemis1996frameworks,
+          title = {The properties of known drugs. 1. Molecular frameworks},
+          author = {Bemis, Guy W. and Murcko, Mark A.},
+          journal = {Journal of Medicinal Chemistry},
+          year = {1996},
+          volume = {39},
+          number = {15},
+          pages = {2887--2893},
+          doi = {10.1021/jm9602928}
+        }
+
+        @article{rogers2010ecfp,
+          title = {Extended-Connectivity Fingerprints},
+          author = {Rogers, David and Hahn, Mathew},
+          journal = {Journal of Chemical Information and Modeling},
+          year = {2010},
+          volume = {50},
+          number = {5},
+          pages = {742--754},
+          doi = {10.1021/ci100050t}
+        }
+
         @article{nguyen2021graphdta,
           title = {GraphDTA: Predicting drug-target binding affinity with graph neural networks},
           author = {Nguyen, Thin and Le, Hang and Quinn, Thomas P. and Nguyen, Tri and Le, Thuc Duy and Venkatesh, Svetha},
@@ -2818,6 +3649,50 @@ def build_references_bib() -> str:
           number = {35},
           pages = {20701--20712},
           doi = {10.1039/d0ra02297g}
+        }
+
+        @article{stepniewska2018pafnucy,
+          title = {Development and evaluation of a deep learning model for protein--ligand binding affinity prediction},
+          author = {Stepniewska-Dziubinska, Marta M. and Zielenkiewicz, Piotr and Siedlecki, Pawel},
+          journal = {Bioinformatics},
+          year = {2018},
+          volume = {34},
+          number = {21},
+          pages = {3666--3674},
+          doi = {10.1093/bioinformatics/bty374}
+        }
+
+        @article{karimi2019deepaffinity,
+          title = {DeepAffinity: interpretable deep learning of compound--protein affinity through unified recurrent and convolutional neural networks},
+          author = {Karimi, Mostafa and Wu, Di and Wang, Zhangyang and Shen, Yang},
+          journal = {Bioinformatics},
+          year = {2019},
+          volume = {35},
+          number = {18},
+          pages = {3329--3338},
+          doi = {10.1093/bioinformatics/btz111}
+        }
+
+        @article{tsubaki2019cpi,
+          title = {Compound--protein interaction prediction with end-to-end learning of neural networks for graphs and sequences},
+          author = {Tsubaki, Masashi and Tomii, Kentaro and Sese, Jun},
+          journal = {Bioinformatics},
+          year = {2019},
+          volume = {35},
+          number = {2},
+          pages = {309--318},
+          doi = {10.1093/bioinformatics/bty535}
+        }
+
+        @article{huang2021moltrans,
+          title = {MolTrans: Molecular Interaction Transformer for drug--target interaction prediction},
+          author = {Huang, Kexin and Xiao, Cao and Glass, Lucas M. and Sun, Jimeng},
+          journal = {Bioinformatics},
+          year = {2021},
+          volume = {37},
+          number = {6},
+          pages = {830--836},
+          doi = {10.1093/bioinformatics/btaa880}
         }
 
         @article{yang2022mgraphdta,
@@ -2985,6 +3860,26 @@ def build_references_bib() -> str:
           doi = {10.1021/acs.jcim.8b00839}
         }
 
+        @article{mysinger2012dude,
+          title = {Directory of Useful Decoys, Enhanced (DUD-E): Better Ligands and Decoys for Better Benchmarking},
+          author = {Mysinger, Michael M. and Carchia, Michael and Irwin, John J. and Shoichet, Brian K.},
+          journal = {Journal of Medicinal Chemistry},
+          year = {2012},
+          volume = {55},
+          number = {14},
+          pages = {6582--6594},
+          doi = {10.1021/jm300687e}
+        }
+
+        @inproceedings{jain2019attention,
+          title = {Attention is not Explanation},
+          author = {Jain, Sarthak and Wallace, Byron C.},
+          booktitle = {Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume 1 (Long and Short Papers)},
+          year = {2019},
+          pages = {3543--3556},
+          doi = {10.18653/v1/N19-1357}
+        }
+
         @article{stokes2020antibiotic,
           title = {A Deep Learning Approach to Antibiotic Discovery},
           author = {Stokes, Jonathan M. and Yang, Kevin and Swanson, Kyle and Jin, Wengong and Cubillos-Ruiz, Andres and Donghia, Nina M. and others},
@@ -3000,6 +3895,8 @@ def build_references_bib() -> str:
 
 
 def build_main_tex(ctx: PublicationContext) -> str:
+    return _build_main_tex_refactored(ctx)
+
     benchmark_metrics = ctx.metrics.get("benchmark", {})
     ibam_metrics = ctx.metrics.get("ibam", {})
     fishing_metrics = ctx.metrics.get("fishing", {})
@@ -3061,7 +3958,7 @@ def build_main_tex(ctx: PublicationContext) -> str:
     architecture_caption = read_caption(
         ctx.results_dir,
         "fig0_model_architecture_caption.txt",
-        "DeepDTA-iBAM architecture and evaluation workflow. Ligands are encoded as atom-bond graphs, proteins are represented by cached ESM-C residue embeddings, bidirectional cross-attention produces the interpretable multimodal state used for affinity prediction, and a diffusion auxiliary head enables target-conditioned seeded molecular drug design.",
+        "DeepDTA-iBAM architecture and evaluation workflow. Ligands are encoded as atom-bond graphs, proteins are represented by cached ESM-family residue embeddings, bidirectional cross-attention produces the interpretable multimodal state used for affinity prediction, and a diffusion auxiliary head enables target-conditioned seeded molecular drug design.",
     )
 
     return textwrap.dedent(
@@ -3083,10 +3980,13 @@ def build_main_tex(ctx: PublicationContext) -> str:
         \\setlength{{\\emergencystretch}}{{3em}}
         \\captionsetup{{font=small}}
         \\hypersetup{{hidelinks}}
+        \\newenvironment{{smalltable}}%
+        {{\\begin{{table}}[t]\\centering\\begingroup\\setlength{{\\tabcolsep}}{{3pt}}\\renewcommand{{\\arraystretch}}{{1.0}}\\scriptsize}}%
+        {{\\endgroup\\end{{table}}}}
         \\begin{{document}}
         \\singlespacing
         \\begin{{center}}
-        {{\\huge\\mdseries \\textbf{{DeepDTA-iBAM:}} Interpretable Cross-Attention for Affinity Prediction, Target-Conditioned Retrieval, and Generative Drug Design\\par}}
+        {{\\LARGE\\mdseries DeepDTA-iBAM: Interpretable Cross-Attention for Drug-Target Affinity Prediction, Target-Aware Retrieval, and Local Molecular Design\\par}}
         \\vspace{{1.0\\baselineskip}}
         {{\\normalsize Affiliations to be finalized at submission\\par}}
         \\vspace{{0.4\\baselineskip}}
@@ -3170,8 +4070,8 @@ def build_main_tex(ctx: PublicationContext) -> str:
         \\section*{{\\textbf{{Code and Data Availability.}} Public reproducibility resources}}
         The public repository at \\url{{https://github.com/kevinmsong/DeepDTA-iBAM}} contains \\texttt{{README.md}}, \\texttt{{LICENSE}}, \\texttt{{requirements.txt}}, \\texttt{{config\\_profiles.py}}, \\texttt{{aggregate\\_ablations.py}}, \\texttt{{case\\_studies\\_results\\_generation.py}}, the \\texttt{{models/}}, \\texttt{{training/}}, \\texttt{{utils/}}, and code-only \\texttt{{data/}} modules, selected \\texttt{{tests/}}, and lightweight \\texttt{{results/}} artifacts supporting the manuscript. The released result files include \\texttt{{table1\\_benchmark.csv}}, \\texttt{{benchmark\\_source\\_audit.csv}}, \\texttt{{ablation\\_table.csv}}, \\texttt{{table3\\_h1\\_drug\\_fishing\\_metrics.csv}}, \\texttt{{table4\\_egfr\\_interpolation\\_metrics.csv}}, \\texttt{{table5\\_top\\_egfr\\_interpolation\\_hits.csv}}, \\texttt{{case\\_study\\_metrics.json}}, \\texttt{{source\\_manifest.json}}, \\texttt{{egfr\\_interpolation\\_anchor\\_panel.csv}}, \\texttt{{egfr\\_interpolation\\_holdout\\_panel.csv}}, and final figure PDFs and 300 dpi PNGs. Raw KIBA data, cached embeddings, model checkpoints, and the local ZINC archive are not redistributed in the public release and should be obtained or regenerated through the documented workflow.
 
-        \\section*{{\\textbf{{Acknowledgements.}} Funding support}}
-        This study was supported in part by the National Heart, Lung, and Blood Institute under grant numbers U01HL134764, P01 HL160476, R01HL131017, and R01HL149137.
+        \\section*{{\\textbf{{Acknowledgements.}} Funding and computing support}}
+        This study was supported in part by the National Heart, Lung, and Blood Institute under grant numbers U01HL134764, P01 HL160476, R01HL131017, and R01HL149137. The authors acknowledge the University of Alabama at Birmingham IT Research Computing group for high-performance computing support and CPU/GPU time on the Cheaha compute cluster, which was used for model training and evaluation in this study.
         \\bibliographystyle{{unsrtnat}}
         \\bibliography{{references}}
         \\end{{document}}
@@ -3180,6 +4080,8 @@ def build_main_tex(ctx: PublicationContext) -> str:
 
 
 def build_supplementary_tex(ctx: PublicationContext) -> str:
+    return _build_supplementary_tex_refactored(ctx)
+
     fishing_metrics = ctx.metrics.get("fishing", {})
     num_replicates = fishing_metrics.get("num_replicates")
     num_h1_drugs = fishing_metrics.get("num_h1_drugs")
@@ -3201,7 +4103,7 @@ def build_supplementary_tex(ctx: PublicationContext) -> str:
 
     return textwrap.dedent(
         f"""
-        \\documentclass[11pt]{{article}}
+        \\documentclass[12pt]{{article}}
         \\usepackage[T1]{{fontenc}}
         \\usepackage{{newtxtext}}
         \\usepackage{{newtxmath}}
@@ -3228,32 +4130,390 @@ def build_supplementary_tex(ctx: PublicationContext) -> str:
     ).strip() + "\n"
 
 
+def _build_main_tex_refactored(ctx: PublicationContext) -> str:
+    benchmark_metrics = ctx.metrics.get("benchmark", {})
+    ablation_metrics = ctx.metrics.get("ablation", {})
+    diagnostics_metrics = ctx.metrics.get("diagnostics", {})
+    ibam_metrics = ctx.metrics.get("ibam", {})
+    generation_metrics = ctx.metrics.get("generation", {})
+    interpolation_metrics = ctx.metrics.get("interpolation", {})
+
+    def fmt(value: Any, precision: int = 4) -> str:
+        if value is None:
+            return "TBD"
+        try:
+            if np.isnan(float(value)):
+                return "TBD"
+        except Exception:
+            return str(value)
+        return f"{float(value):.{precision}f}"
+
+    def pct(value: Any, precision: int = 1) -> str:
+        if value is None:
+            return "TBD"
+        return f"{100.0 * float(value):.{precision}f}"
+
+    architecture_caption = read_caption(
+        ctx.results_dir,
+        "fig0_model_architecture_caption.txt",
+        "DeepDTA-iBAM architecture and evaluation workflow. Ligands are encoded as atom-bond graphs, proteins are represented by cached ESM-C residue embeddings, bidirectional cross-attention produces the interpretable multimodal state used for affinity prediction, and a diffusion auxiliary head enables target-conditioned seeded molecular drug design.",
+    )
+
+    return textwrap.dedent(
+        f"""
+        \\documentclass[12pt]{{article}}
+        \\usepackage[T1]{{fontenc}}
+        \\usepackage{{newtxtext}}
+        \\usepackage{{newtxmath}}
+        \\usepackage[margin=1in]{{geometry}}
+        \\usepackage{{graphicx}}
+        \\usepackage{{booktabs}}
+        \\usepackage{{longtable}}
+        \\usepackage{{array}}
+        \\usepackage{{float}}
+        \\usepackage{{setspace}}
+        \\usepackage{{caption}}
+        \\usepackage[super,sort&compress]{{natbib}}
+        \\usepackage{{hyperref}}
+        \\setlength{{\\emergencystretch}}{{3em}}
+        \\captionsetup{{font=small}}
+        \\hypersetup{{hidelinks}}
+        \\newenvironment{{smalltable}}%
+        {{\\begin{{table}}[t]\\centering\\begingroup\\setlength{{\\tabcolsep}}{{3pt}}\\renewcommand{{\\arraystretch}}{{1.0}}\\scriptsize}}%
+        {{\\endgroup\\end{{table}}}}
+        \\begin{{document}}
+        \\singlespacing
+        \\begin{{center}}
+        {{\\LARGE\\mdseries DeepDTA-iBAM: Interpretable Cross-Attention for Drug-Target Affinity Prediction, Target-Aware Retrieval, and Local Molecular Design\\par}}
+        \\vspace{{1.0\\baselineskip}}
+        {{\\normalsize Affiliations to be finalized at submission\\par}}
+        \\vspace{{0.4\\baselineskip}}
+        {{\\normalsize April 12, 2026\\par}}
+        \\end{{center}}
+        \\vspace{{1.0\\baselineskip}}
+        \\begin{{abstract}}
+        Drug-target affinity models are most useful when a single learned representation supports quantitative prediction, structural inspection, target-focused retrieval, and chemically local follow-up design. DeepDTA-iBAM addresses that broader need through graph-based ligand encoding, cached ESM-family protein embeddings, bidirectional atom-residue cross-attention, and a target-conditioned diffusion auxiliary head within one multimodal architecture. The trained DeepDTA-iBAM model achieved concordance index = {fmt(benchmark_metrics.get("standard_ci_main"))} on the canonical KIBA standard split (95\\% bootstrap CI {fmt(benchmark_metrics.get("standard_ci_low"))}--{fmt(benchmark_metrics.get("standard_ci_high"))}), with RMSE = {fmt(benchmark_metrics.get("standard_rmse_main"))}, MAE = {fmt(benchmark_metrics.get("standard_mae_main"))}, Pearson = {fmt(benchmark_metrics.get("standard_pearson_main"))}, and $R^2$ = {fmt(benchmark_metrics.get("standard_r2_main"))}. On a five-complex structural-localization benchmark, residue-level signal was modest (mean residue contact AUROC = {fmt(ibam_metrics.get("residue_contact_auroc_mean"))}; mean residue top-$k$ overlap = {fmt(ibam_metrics.get("residue_topk_overlap_mean"))}), whereas atom-level correspondence remained weak (mean atom contact AUROC = {fmt(ibam_metrics.get("atom_contact_auroc_mean"))}), indicating that the attention maps are more appropriate for coarse interface localization than for strong mechanistic attribution. In EGFR-family retrieval, interpolation-path ranking modestly exceeded latent nearest-anchor ranking (AUROC = {fmt(interpolation_metrics.get("interpolation_path_auroc"), 3)} versus {fmt(interpolation_metrics.get("latent_nearest_anchor_auroc"), 3)}; Recovery@10\\% = {fmt(interpolation_metrics.get("interpolation_path_recovery_at_10pct"), 3)} versus {fmt(interpolation_metrics.get("latent_nearest_anchor_recovery_at_10pct"), 3)}), whereas explicit affinity ranking was the strongest model-derived signal (AUROC = {fmt(interpolation_metrics.get("predicted_affinity_auroc"), 3)}, AUPRC = {fmt(interpolation_metrics.get("predicted_affinity_auprc"), 3)}, Recovery@10\\% = {fmt(interpolation_metrics.get("predicted_affinity_recovery_at_10pct"), 3)}). In an EGFR-conditioned local-design benchmark centered on dasatinib, the diffusion module generated {int(generation_metrics.get("num_unique_valid_analogs", 0))} unique valid analogs, achieved a mean predicted EGFR affinity of {fmt(generation_metrics.get("diffusion_mean_pred_affinity"))} versus {fmt(generation_metrics.get("random_edit_mean_pred_affinity"))} for random atom edits and {fmt(generation_metrics.get("fragment_swap_mean_pred_affinity"))} for fragment swaps, and produced top candidates reaching {fmt(generation_metrics.get("best_pred_affinity"))}. Overall, DeepDTA-iBAM is most persuasive as an integrated, affinity-centered framework that connects quantitative prediction, residue-scale structural inspection, target-aware retrieval, and chemically local hit expansion, while also showing that ligand-similarity baselines remain difficult to surpass in chemically permissive settings.
+        \\end{{abstract}}
+
+        \\newpage
+        \\section{{Introduction}}
+        Drug-target affinity prediction remains a core task in computational drug discovery because it connects molecular structure and protein sequence to a quantitative signal that can guide screening, lead optimization, and repurposing. Standardized resources such as KIBA enabled direct comparison across successive model classes, from similarity-based and feature-engineered methods to convolutional, graph-based, and transformer-inspired architectures, including SimBoost, DeepDTA, WideDTA, DeepAffinity, end-to-end graph-sequence compound-protein models, GraphDTA, MolTrans, MGraphDTA, FusionDTA, and more recent language-model-guided baselines such as HMM-DTA \\cite{{tang2014kiba,he2017simboost,pahikkala2015realistic,ozturk2018deepdta,ozturk2019widedta,karimi2019deepaffinity,tsubaki2019cpi,nguyen2021graphdta,huang2021moltrans,yang2022mgraphdta,huang2022fusiondta,bidgoli2026hmmdta}}. Structure-based affinity models such as Pafnucy further showed that richer protein-ligand representations can be informative when co-complex structures are available, although their applicability is narrower because experimentally resolved complexes remain limited at scale \\cite{{stepniewska2018pafnucy}}.
+
+        In practice, however, a single regression score is rarely sufficient. A medicinal-chemistry or translational workflow usually asks at least four related questions: whether the model ranks active compounds well, whether it identifies a plausible structural interaction region, whether its learned representation can help prioritize a target-focused library, and whether the same model family can propose nearby follow-up chemistry. Those tasks are often presented separately in the literature, but they are tightly coupled in real use. A model that predicts affinity well but offers no interpretable structural signal may be difficult to trust. A model that appears to retrieve target-family ligands well may in fact be recapitulating scaffold similarity rather than target-conditioned representation learning. A model that generates attractive analogs may still be benefiting mostly from the same scorer used to judge them. For that reason, a workflow-oriented model needs broader evaluation than a benchmark table alone.
+
+        That broader evaluation also needs to be methodologically skeptical. Permissive train-test splits can overstate generalization, Bemis-Murcko scaffold reuse can inflate retrieval success, fingerprint baselines remain extremely strong in ligand-centric search, and attention maps are not automatically faithful explanations of model behavior \\cite{{pahikkala2015realistic,bemis1996frameworks,rogers2010ecfp,mysinger2012dude,vamathevan2019ml,schneider2020rethinking,jimenezluna2020xai,jain2019attention}}. The current generation literature raises a related issue: local or de novo proposal quality is often summarized with heuristic scores alone, even though those heuristics can favor seed-near edits or model-internal circularity \\cite{{brown2019guacamol,schneider2020rethinking}}. Accordingly, the central question is not whether DeepDTA-iBAM can be made to look favorable under a selective narrative. The more important question is whether one trained model still supports useful scientific and operational claims once stronger controls, uncertainty estimates, and tighter wording are applied.
+
+        The present study therefore examines DeepDTA-iBAM from a workflow perspective while restricting the evidence to non-retraining analyses of one trained integrated model. Four questions guide the evaluation. First, how credible is the model as a standard KIBA affinity predictor once uncertainty and split permissiveness are made explicit? Second, do the iBAM attention maps support only qualitative inspection, or do they show reproducible structural localization across multiple complexes? Third, does target-conditioned latent geometry add retrieval value beyond simpler similarity-based baselines in an EGFR-family setting? Fourth, does the diffusion auxiliary head improve local analog proposal relative to naive neighborhood baselines when all candidates are rescored by the same model? Within that framing, the main innovation is not simply another affinity regressor. It is a unified multimodal representation that supports four practical use cases from one model family: quantitative potency estimation, residue-scale structural inspection, family-aware ligand prioritization, and seed-centered analog expansion.
+
+        \\section{{Methods}}
+        \\subsection{{Model Architecture}}
+        DeepDTA-iBAM combines a graph-based ligand encoder, cached ESM-family protein language-model embeddings, bidirectional atom-to-residue and residue-to-atom cross-attention, and a diffusion auxiliary head. The ligand encoder operates on RDKit-derived atom-bond graphs and applies multi-head graph attention with edge-aware masking \\cite{{velickovic2018gat}}. Protein residues are represented by cached embeddings from the ESM family before projection into the shared fusion space \\cite{{lin2023esm}}. This design preserves chemically explicit ligand topology while avoiding repeated full protein-language-model inference during evaluation.
+
+        Cross-attention produces the multimodal state used for affinity prediction and for iBAM heatmap extraction. In practical terms, the learned attention tensors provide the atom-to-residue and residue-to-atom score maps that are later aligned with co-crystal structures in the interpretability analysis. The model therefore exposes a single internal representation that can be queried both for scalar affinity prediction and for token-level interaction emphasis. A denoising diffusion head is trained on the ligand representation under target conditioning and is reused at inference time for seeded local analog proposal \\cite{{ho2020ddpm}}. Across all reported analyses, the same integrated checkpoint is used so that differences across experiments reflect evaluation design rather than repeated model re-optimization. This is important for practical deployment because the architecture is meant to support ranking, inspection, retrieval, and follow-up chemistry from one stable learned representation.
+
+        \\subsection{{Datasets, Splits, and Controls}}
+        The main predictive benchmark uses the canonical KIBA standard split introduced for cross-paper comparison \\cite{{tang2014kiba}}. Because this split is widely reported but chemically permissive, the analysis treats it as the primary contextual benchmark while also surfacing overlap diagnostics and archived scaffold-split ablations. Those ablations were not retrained for the present study. Instead, the previously aggregated three-seed results were carried forward as fixed evidence about how cross-attention, ranking loss, and the diffusion head affected pure predictive performance.
+
+        The structural-localization analysis combines one qualitative FAK1-P4N case study with a five-complex panel spanning kinase co-crystal systems. The retrieval analysis uses an EGFR-family panel assembled from anchor binders, holdout binders, and a local property-filtered lead-like ZINC background \\cite{{irwin2023zinc22}}. To test whether any apparent retrieval benefit survives simple chemistry-based controls, the main comparisons include interpolation-path ranking, latent nearest-anchor ranking, explicit predicted affinity, nearest-anchor ECFP/Tanimoto similarity, and anchor-centroid ECFP/Tanimoto similarity \\cite{{rogers2010ecfp}}. The supplementary H1 stress test follows the same logic but is kept outside the main narrative because it is less target-specific and more vulnerable to confounding by generic ligand similarity.
+
+        The local-design analysis is centered on dasatinib as a fixed seed topology under EGFR conditioning. Diffusion-based proposals are compared against two deliberately simple baselines, random atom edits and fragment swaps, so that the study tests whether the learned generative bias contributes anything beyond local heuristic perturbation. This choice narrows the claim to chemically local analog proposal rather than open-ended de novo design.
+
+        \\subsection{{Evaluation Design}}
+        The evaluation focuses strictly on inference-time evidence from the trained integrated checkpoint. The standard KIBA evaluation was rerun on the held-out test partition, and bootstrap resampling of raw predictions was used to estimate uncertainty for concordance index, RMSE, MAE, Pearson correlation, and $R^2$. Literature rows in the benchmark table were restricted to primary-source reports on the standard KIBA split so that the comparison remained task-compatible \\cite{{ozturk2018deepdta,ozturk2019widedta,nguyen2021graphdta,jiang2020dgraphdta,yang2022mgraphdta}}. Because those literature rows were not rerun in the same environment, the benchmark table is explicitly contextual and not presented as a controlled leaderboard.
+
+        Standard-evaluation diagnostics were used to separate point performance from evaluation conditions. Bland-Altman plots and residual-versus-target plots summarize bias and heteroscedasticity in the held-out predictions, whereas split-overlap tables quantify how many compounds and targets recur across train, validation, and test subsets. This is important because performance on a permissive split can still be operationally useful, but it should not be interpreted as if it were a strict scaffold- or family-holdout assessment \\cite{{pahikkala2015realistic,bemis1996frameworks}}.
+
+        \\subsection{{Experiment-Specific Endpoints}}
+        Interpretability was evaluated in two layers. First, the FAK1-P4N complex was retained as a qualitative structural case study. Second, the analysis was expanded to a five-complex structural-localization benchmark that quantifies residue- and atom-level contact AUROC, top-$k$ overlap, and perturbation response. Contact AUROC measures whether higher attention scores are concentrated on structure-derived contacts across all residues or atoms, whereas top-$k$ overlap asks whether the highest-scoring positions recover the contact set at the same cardinality. Perturbation tests compare the drop in predicted affinity after masking top-ranked positions with the drop produced by masking a matched random set. This framing is deliberately conservative because visually compelling attention maps can still fail to track faithful feature importance \\cite{{jimenezluna2020xai,jain2019attention}}.
+
+        Retrieval and generation were likewise structured around stronger controls. The EGFR study compares interpolation geometry with latent nearest-anchor ranking, explicit affinity prediction, and two ligand-only ECFP/Tanimoto baselines \\cite{{rogers2010ecfp}}. Retrieval reporting includes AUROC, AUPRC, BEDROC20, enrichment factors, and recovery at ranked fractions, together with bootstrap confidence intervals over the candidate set. Because decoy construction materially affects measured virtual-screening performance, the retrieval analysis is interpreted as a leakage-aware ranking experiment rather than as a prospective screening claim \\cite{{mysinger2012dude}}. The generation study compares diffusion sampling against random atom edits and fragment swaps, and summarizes validity, uniqueness, similarity to the seed, QED, synthetic accessibility, Lipinski compliance, alert-free status, and model-predicted EGFR affinity \\cite{{lipinski2001ro5,bickerton2012qed,ertl2009sa,brown2019guacamol}}. All reported tables, figures, and captions were generated directly from the evaluation outputs so that the narrative remained aligned with the underlying results.
+        {latex_external_figure_block("results/fig0_model_architecture.png", architecture_caption, "fig:model_architecture")}
+
+        \\section{{Results}}
+        \\subsection{{Benchmark and Diagnostics}}
+        On the canonical standard KIBA test partition, DeepDTA-iBAM achieved CI = {fmt(benchmark_metrics.get("standard_ci_main"))}, RMSE = {fmt(benchmark_metrics.get("standard_rmse_main"))}, MAE = {fmt(benchmark_metrics.get("standard_mae_main"))}, Pearson = {fmt(benchmark_metrics.get("standard_pearson_main"))}, and $R^2$ = {fmt(benchmark_metrics.get("standard_r2_main"))}. The 95\\% bootstrap interval for CI was {fmt(benchmark_metrics.get("standard_ci_low"))}--{fmt(benchmark_metrics.get("standard_ci_high"))}, and the corresponding bootstrap interval for RMSE was {fmt(benchmark_metrics.get("standard_rmse_low"))}--{fmt(benchmark_metrics.get("standard_rmse_high"))}. Together, those ranges indicate that the held-out ranking and error estimates are reasonably stable for this checkpoint rather than being driven by a small number of unusually easy or unusually hard examples.
+
+        Table~\\ref{{tab:benchmark}} places the local DeepDTA-iBAM row alongside primary-source standard-split literature rows. That comparison is contextual rather than fully controlled, but it still shows that the integrated model remains quantitatively credible relative to widely cited sequence and graph baselines \\cite{{ozturk2018deepdta,ozturk2019widedta,nguyen2021graphdta,jiang2020dgraphdta,yang2022mgraphdta}}. At the same time, the table is intentionally paired with the ablation results so that benchmark credibility is not mistaken for a claim of dominance. The best archived standard-split RMSE came from {latex_escape(str(ablation_metrics.get("best_standard_rmse_variant", "another variant")))} rather than the full system, which means the added workflow-oriented modules do not simply improve every predictive metric by default.
+
+        The diagnostics clarify why this nuance matters. Figure~\\ref{{fig:fig5_residual_diagnostics}} shows that the residual plots do not exhibit catastrophic drift across the KIBA range, and the mean bias remained close to zero at {fmt(diagnostics_metrics.get("bias_mean"))}, but the limits of agreement were still broad enough to matter for single-pair decisions. Table~\\ref{{tab:standard_overlap}} makes the evaluation setting equally explicit: the canonical standard split remains chemically permissive because the train and test subsets share {int(diagnostics_metrics.get("train_test_compound_overlap", 0)):,} compounds and {int(diagnostics_metrics.get("train_test_target_overlap", 0)):,} targets. That overlap helps explain why standard-split performance should be read as a useful but easier benchmark condition rather than as a strong generalization stress test \\cite{{pahikkala2015realistic,bemis1996frameworks}}.
+
+        The precomputed scaffold-based ablation therefore provides an important complement. Under scaffold shift, the full model remained competitive with scaffold-partition CI = {fmt(ablation_metrics.get("scaffold_full_ci"))}, but the strongest archived scaffold CI belonged to {latex_escape(str(ablation_metrics.get("best_scaffold_ci_variant", "another variant")))} at {fmt(ablation_metrics.get("best_scaffold_ci"))}. This pattern supports a measured interpretation: the integrated architecture is credible as a benchmark regressor and useful as an integrated framework, but the value of its auxiliary components lies more in extending the analysis space than in guaranteeing the strongest pure affinity metric on every split.
+        {latex_table_block(ctx.results_dir, "table1_benchmark", "table1_benchmark_caption.txt", "tab:benchmark", fallback="Contextual standard-split KIBA benchmark.")}
+        {latex_table_block(ctx.results_dir, "ablation_table", "ablation_table_caption.txt", "tab:ablation", fallback="Ablation summary across standard and scaffold splits.")}
+        {latex_figure_block(ctx.results_dir, "fig5_residual_diagnostics", "fig5_residual_diagnostics_caption.txt", fallback="Residual diagnostics for the standard-split evaluation.")}
+        {latex_table_block(ctx.results_dir, "table_s_standard_split_overlap", "table_s_standard_split_overlap_caption.txt", "tab:standard_overlap", fallback="Standard-split overlap summary.")}
+
+        \\subsection{{Structural Localization Benchmark}}
+        The interpretability claim now rests on a five-complex structural-localization benchmark rather than on a single visual example. Across the panel, mean residue contact AUROC was {fmt(ibam_metrics.get("residue_contact_auroc_mean"))} with a median of {fmt(ibam_metrics.get("residue_contact_auroc_median"))}, whereas mean atom contact AUROC was only {fmt(ibam_metrics.get("atom_contact_auroc_mean"))}. Mean residue top-$k$ overlap was {fmt(ibam_metrics.get("residue_topk_overlap_mean"))}, and the mean residue and atom perturbation signals were {fmt(ibam_metrics.get("residue_mask_signal_mean"))} and {fmt(ibam_metrics.get("atom_mask_signal_mean"))}, respectively. Taken together, those statistics indicate that the model captures some residue-scale localization signal across the panel, but that the signal is neither sharp enough nor stable enough to justify strong atom-level attribution claims.
+
+        The metric pattern is also instructive. Residue-level enrichment is consistently more informative than atom-level enrichment, which suggests that the learned cross-attention is better viewed as a coarse spatial localization heuristic than as a faithful ranking of individual contact atoms. Although atom top-$k$ overlap can appear numerically high in this small-complex setting, the complementary AUROC and perturbation results do not support an equally strong atom-level interpretation. The most defensible reading is therefore that iBAM can help direct structural inspection toward a plausible interface neighborhood, but should not yet be treated as a validated mechanistic explanation layer.
+
+        This conservative reading is consistent with broader caution in the explainability literature, where attention weights can be visually intuitive without behaving like faithful importance measures \\cite{{jimenezluna2020xai,jain2019attention}}. The FAK1-P4N case study therefore serves as a qualitative illustration rather than as standalone evidence. For that complex, the model predicted a KIBA affinity of {fmt(ibam_metrics.get("predicted_affinity"))} and concentrated attention near the structurally implicated binding neighborhood reported for P4N in FAK1 \\cite{{fak1p4n2025}}. Figure~\\ref{{fig:fig1_p4n_fak1_ibam}} is most useful as a visual example of how the map can be inspected alongside a co-crystal structure once the benchmark summary in Figure~\\ref{{fig:fig_interpretability_summary}} and Table~\\ref{{tab:interpretability_summary}} has established the broader pattern.
+        {latex_figure_block(ctx.results_dir, "fig_interpretability_summary", "fig_interpretability_summary_caption.txt", fallback="Structural localization benchmark across five kinase complexes.")}
+        {latex_table_block(ctx.results_dir, "table_interpretability_summary", "table_interpretability_summary_caption.txt", "tab:interpretability_summary", fallback="Structural localization benchmark summary across five kinase complexes.")}
+        {latex_figure_block(ctx.results_dir, "fig1_p4n_fak1_ibam", "fig1_p4n_fak1_ibam_caption.txt", fallback="FAK1-P4N iBAM case study.")}
+
+        \\subsection{{EGFR Retrieval Benchmark}}
+        The primary retrieval analysis focuses on EGFR-family ligands because it supports direct comparison against both model-derived and ligand-only baselines. Six anchor binders defined the interpolation path, {int(interpolation_metrics.get("num_holdouts", 0))} EGFR-family molecules were held out as positives, and {int(interpolation_metrics.get("num_zinc_decoys", 0))} lead-like ZINC decoys formed the background library \\cite{{irwin2023zinc22}}. Interpolation-path ranking achieved AUROC = {fmt(interpolation_metrics.get("interpolation_path_auroc"), 3)} and AUPRC = {fmt(interpolation_metrics.get("interpolation_path_auprc"), 3)}, improving modestly over latent nearest-anchor ranking, which reached AUROC = {fmt(interpolation_metrics.get("latent_nearest_anchor_auroc"), 3)} and AUPRC = {fmt(interpolation_metrics.get("latent_nearest_anchor_auprc"), 3)}. Recovery at the top 10\\% of the ranked list likewise improved from {fmt(interpolation_metrics.get("latent_nearest_anchor_recovery_at_10pct"), 3)} to {fmt(interpolation_metrics.get("interpolation_path_recovery_at_10pct"), 3)}. This pattern suggests that path geometry captures some family structure beyond a single-anchor latent similarity.
+
+        The strongest signals, however, came from explicit affinity prediction and the ECFP/Tanimoto controls. Predicted affinity reached AUROC = {fmt(interpolation_metrics.get("predicted_affinity_auroc"), 3)}, AUPRC = {fmt(interpolation_metrics.get("predicted_affinity_auprc"), 3)}, and Recovery@10\\% = {fmt(interpolation_metrics.get("predicted_affinity_recovery_at_10pct"), 3)}, while the nearest-anchor ECFP baseline reached AUROC = {fmt(interpolation_metrics.get("nearest_anchor_ecfp_auroc"), 3)} and Recovery@10\\% = {fmt(interpolation_metrics.get("nearest_anchor_ecfp_recovery_at_10pct"), 3)}. That contrast is the central interpretation point in this section. The EGFR panel is useful precisely because it reveals how easily a chemically related benchmark can favor simple fingerprint similarity \\cite{{rogers2010ecfp,mysinger2012dude}}.
+
+        The retrieval result should therefore be read as a leakage-aware stress test of ranking behavior, not as evidence that interpolation geometry outperforms established ligand-centric search. Within that more careful framing, the model still contributes something meaningful: interpolation-path ranking is more informative than a naive latent nearest-anchor rule, and the explicit affinity head is a strong model-derived ranking signal. What the experiment does not show is that target-conditioned latent structure alone is sufficient to beat chemical-similarity baselines in a tightly related target family. The exploratory top-hit list is therefore best interpreted as a prioritization output for follow-up, not as a validated set of novel EGFR leads.
+        {latex_figure_block(ctx.results_dir, "fig_egfr_retrieval_comparison", "fig_egfr_retrieval_comparison_caption.txt", fallback="EGFR retrieval benchmark with latent and ligand-only baselines.")}
+        {latex_table_block(ctx.results_dir, "table_egfr_retrieval_metrics", "table_egfr_retrieval_metrics_caption.txt", "tab:egfr_retrieval", fallback="EGFR retrieval benchmark with explicit latent and ligand-only baselines.")}
+
+        \\subsection{{Comparative Local Analog Proposal}}
+        The generation analysis is framed as a local analog proposal benchmark rather than as an unconstrained de novo design claim. Under EGFR conditioning, diffusion sampling produced {int(generation_metrics.get("num_unique_valid_analogs", 0))} unique valid analogs from the fixed dasatinib topology and achieved a mean predicted EGFR affinity of {fmt(generation_metrics.get("diffusion_mean_pred_affinity"))}, compared with {fmt(generation_metrics.get("random_edit_mean_pred_affinity"))} for random atom edits and {fmt(generation_metrics.get("fragment_swap_mean_pred_affinity"))} for fragment swaps. The seed molecule itself scored {fmt(generation_metrics.get("seed_pred_affinity"))}, and the best-ranked diffusion proposal reached a predicted affinity of {fmt(generation_metrics.get("best_pred_affinity"))}. These numbers indicate that the diffusion head is not merely reproducing the seed score. It can move at least some proposals into a slightly higher-scoring region under the shared rescoring model.
+
+        This comparison is more informative than a ranked gallery of diffusion outputs because it asks whether the learned generative bias improves local proposal quality beyond simple neighborhood perturbations. The affinity advantage is modest, which is exactly why the baseline comparison matters. If the model had only been judged by its top few diffusion outputs, it would be easy to overstate the generative result. In contrast, the full distributional comparison shows a more realistic tradeoff: diffusion slightly improves mean model-predicted affinity, random edits remain much closer to the seed structure, and fragment swaps can look better on some medicinal-chemistry heuristics such as QED, synthetic accessibility, and simple rule-based pass rates \\cite{{bickerton2012qed,ertl2009sa,brown2019guacamol,schneider2020rethinking}}.
+
+        Because all candidates are rescored with the same checkpoint, this section remains a computational comparison rather than orthogonal evidence of optimization quality. The most defensible conclusion is therefore narrow but still useful: the diffusion auxiliary head appears to provide incremental value for chemically local analog proposal around a known scaffold when compared with naive edit-based baselines. It does not, on its own, validate the generated molecules as optimization successes.
+        {latex_figure_block(ctx.results_dir, "fig_generation_comparison", "fig_generation_comparison_caption.txt", fallback="Comparative EGFR local-design benchmark.")}
+        {latex_table_block(ctx.results_dir, "table_generation_comparison_summary", "table_generation_comparison_summary_caption.txt", "tab:generation_comparison", fallback="Comparative EGFR local-design benchmark summary.")}
+
+        \\section{{Discussion}}
+        Taken together, the evidence supports four narrower claims. First, DeepDTA-iBAM remains a credible affinity model on the canonical KIBA benchmark, but the contextual comparison and precomputed ablations make clear that it is not the strongest pure regressor in isolation. Second, iBAM provides modest residue-level localization signal but weak atom-level correspondence and inconsistent perturbation behavior, so it currently functions as a coarse structural-localization heuristic rather than as a validated attribution mechanism. Third, interpolation geometry contributes retrieval information beyond latent nearest-anchor ranking, but not beyond simple ECFP similarity, which makes the EGFR benchmark more valuable as a control for chemotype leakage than as a clean demonstration of latent-only retrieval. Fourth, the diffusion head appears useful for local analog proposal because it outperforms naive local edit baselines under the shared rescoring model, although that evidence remains computational.
+
+        These points matter because they recast the model as an integrated decision-support framework rather than as a single-task winner. The affinity head is strong enough to support screening triage, the cross-attention maps are informative enough to support residue-scale structural inspection, the retrieval machinery adds structure beyond a trivial latent-neighbor rule, and the diffusion head contributes modest local proposal value. None of these components, taken alone, justifies an expansive claim. Their practical value comes from being integrated and from being evaluated with their failure modes made visible. The key advance is therefore not only numerical. It is a clearer demonstration that one multimodal representation can inform several adjacent drug-discovery decisions, including ranking, interface inspection, family-focused prioritization, and chemically local hit expansion.
+
+        The study also sharpens the boundary between what is promising and what remains unresolved. For interpretability, the central unresolved issue is faithfulness: residue-scale localization is plausible, but atom-scale explanation is not yet supported by the benchmark statistics. For retrieval, the central unresolved issue is leakage: target-family ligand similarity remains so dominant that latent retrieval must be interpreted against strong chemistry-based controls. For generation, the central unresolved issue is circularity: the same model family that proposes and rescored analogs cannot by itself establish downstream optimization quality. Clarifying these boundaries is useful because it prevents overclaiming while still preserving the parts of the system that appear genuinely helpful.
+
+        Several limitations remain. Literature benchmark rows were not rerun in a shared execution environment, the interpretability panel still covers only five complexes, the EGFR retrieval benchmark remains based on a local decoy library, and the comparative generation study still relies on model-internal rescoring rather than orthogonal docking or assay evidence. The out-of-domain H1 analysis is therefore retained in the Supplementary Information as a stress test rather than as a primary deployment claim. These constraints point directly to the next validation steps: broader structural panels, more challenging decoy construction, matched-decoy or scaffold-aware retrieval stress tests, and orthogonal downstream evaluation of retrieved or proposed molecules. More broadly, practical value in drug discovery still depends on prospective confirmation, not just retrospective ranking quality \\cite{{vamathevan2019ml,stokes2020antibiotic}}.
+
+        Even with those limitations, the evidence supports a clear and useful conclusion. DeepDTA-iBAM is most convincing as an integrated, affinity-centered framework that supports qualitative structural inspection, baseline-aware retrieval analysis, and chemically local analog proposal from one trained checkpoint. It is least convincing when any one of those components is presented as if retrospective computational evidence were sufficient on its own. That distinction matters for scientific rigor and provides the most constructive basis for future experimental follow-up.
+
+        \\section{{Code and Data Availability}}
+        The public repository at \\url{{https://github.com/kevinmsong/DeepDTA-iBAM}} contains the code used for model training, evaluation, case-study analysis, and preparation of figures and tables. Raw KIBA data, cached embeddings, model checkpoints, and the local ZINC archive are not redistributed and should be obtained or regenerated through the documented workflow.
+
+        \\section{{Acknowledgements}}
+        This study was supported in part by the National Heart, Lung, and Blood Institute under grant numbers U01HL134764, P01 HL160476, R01HL131017, and R01HL149137. The authors acknowledge the University of Alabama at Birmingham IT Research Computing group for high-performance computing support and CPU/GPU time on the Cheaha compute cluster, which was used for model training and evaluation in this study.
+        \\newpage
+        \\bibliographystyle{{unsrtnat}}
+        \\bibliography{{references}}
+        \\end{{document}}
+        """
+    ).strip() + "\n"
+
+
+def _build_supplementary_tex_refactored(ctx: PublicationContext) -> str:
+    fishing_metrics = ctx.metrics.get("fishing", {})
+
+    def fmt(value: Any, precision: int = 4) -> str:
+        if value is None:
+            return "TBD"
+        try:
+            if np.isnan(float(value)):
+                return "TBD"
+        except Exception:
+            return str(value)
+        return f"{float(value):.{precision}f}"
+
+    return textwrap.dedent(
+        f"""
+        \\documentclass[12pt]{{article}}
+        \\usepackage[T1]{{fontenc}}
+        \\usepackage{{newtxtext}}
+        \\usepackage{{newtxmath}}
+        \\usepackage[margin=1in]{{geometry}}
+        \\usepackage{{graphicx}}
+        \\usepackage{{booktabs}}
+        \\usepackage{{longtable}}
+        \\usepackage{{array}}
+        \\usepackage{{float}}
+        \\usepackage{{setspace}}
+        \\usepackage{{caption}}
+        \\usepackage[super,sort&compress]{{natbib}}
+        \\usepackage{{hyperref}}
+        \\setlength{{\\emergencystretch}}{{3em}}
+        \\captionsetup{{font=small}}
+        \\hypersetup{{hidelinks}}
+        \\renewcommand{{\\thesection}}{{S\\arabic{{section}}}}
+        \\renewcommand{{\\thesubsection}}{{S\\arabic{{section}}.\\arabic{{subsection}}}}
+        \\renewcommand{{\\thefigure}}{{S\\arabic{{figure}}}}
+        \\renewcommand{{\\thetable}}{{S\\arabic{{table}}}}
+        \\newenvironment{{smalltable}}%
+        {{\\begin{{table}}[H]\\centering\\begingroup\\setlength{{\\tabcolsep}}{{3pt}}\\renewcommand{{\\arraystretch}}{{1.0}}\\scriptsize}}%
+        {{\\endgroup\\end{{table}}}}
+        \\begin{{document}}
+        \\singlespacing
+        \\begin{{center}}
+        {{\\Large\\mdseries Supplementary Information\\par}}
+        \\vspace{{0.4em}}
+        {{\\normalsize for\\par}}
+        \\vspace{{0.4em}}
+        {{\\large\\mdseries DeepDTA-iBAM: Interpretable Cross-Attention for Drug-Target Affinity Prediction, Target-Aware Retrieval, and Local Molecular Design\\par}}
+        \\vspace{{0.8em}}
+        {{\\normalsize Affiliations to be finalized at submission\\par}}
+        \\vspace{{0.3em}}
+        {{\\normalsize April 12, 2026\\par}}
+        \\end{{center}}
+        \\vspace{{1.0em}}
+
+        This supplementary information provides expanded uncertainty estimates, stress tests, and detailed result tables that extend the reported analyses without duplicating the core narrative. All sections, subsections, figures, and tables use canonical supplementary numbering with the \\texttt{{S}} prefix.
+
+        \\section{{Additional Benchmark Context}}
+        The following benchmark material expands the standard-split KIBA evaluation with uncertainty and scaffold-aware context that support, but do not repeat, the primary benchmark discussion.
+
+        \\subsection{{Bootstrap Uncertainty}}
+        The bootstrap table below complements the primary benchmark values by showing the local uncertainty around the reported point estimates. These intervals are useful for judging the stability of the rerun checkpoint, but they should not be mistaken for between-study uncertainty because the external benchmark rows were not rerun in a shared environment.
+        {latex_table_block(ctx.results_dir, "table_s_standard_eval_bootstrap", "table_s_standard_eval_bootstrap_caption.txt", "tab:standard_bootstrap", fallback="Bootstrap uncertainty for the standard-split evaluation.")}
+
+        \\subsection{{Scaffold-Split Ablation Context}}
+        The archived scaffold-split ablation summary is included here to complement the standard-split benchmark with a more chemically stringent view of comparative model behavior. It is especially informative because the full integrated model remained competitive without being the strongest pure predictor on every scaffold-aware metric, which helps separate workflow breadth from pure regression optimization.
+        {latex_figure_block(ctx.results_dir, "fig_ablation_scaffold_summary", "fig_ablation_scaffold_summary_caption.txt", fallback="Precomputed scaffold-split ablation summary.")}
+
+        \\section{{Retrieval Analyses}}
+        The supplementary retrieval materials provide additional context for the EGFR benchmark and retain the H1 analysis as an external stress test.
+
+        \\subsection{{H1 Retrieval Stress Test}}
+        The H1 analysis is retained as an out-of-domain stress test rather than as a primary deployment result. In this setting, DeepDTA-iBAM achieved AUROC = {fmt(fishing_metrics.get("AUROC"), 3)} and AUPRC = {fmt(fishing_metrics.get("AUPRC"), 3)}, whereas the nearest-active ECFP baseline was substantially stronger with AUROC = {fmt(fishing_metrics.get("similarity_baseline_auroc"), 3)} and AUPRC = {fmt(fishing_metrics.get("similarity_baseline_auprc"), 3)}. The target-specificity control remained weak with specificity MRR = {fmt(fishing_metrics.get("specificity_mrr"), 3)}. Its value is therefore mainly cautionary: out-of-domain retrieval signal can remain modest even when simple ligand similarity is highly effective.
+        {latex_figure_block(ctx.results_dir, "fig2_h1_drug_fishing", "fig2_h1_drug_fishing_caption.txt", fallback="Supplementary H1 retrieval stress test.")}
+        {latex_table_block(ctx.results_dir, "table3_h1_drug_fishing_metrics", "table3_h1_drug_fishing_metrics_caption.txt", "tab:h1_supplementary", fallback="Supplementary H1 retrieval stress test metrics.")}
+
+        \\subsection{{Expanded EGFR Retrieval Outputs}}
+        The following tables provide the full retrieval metric set, including the exploratory combined score, together with the top exploratory ZINC candidates prioritized in the EGFR retrieval workflow. They are retained here because they extend the main retrieval comparison without changing its central conclusion that ligand-similarity baselines remain exceptionally strong on this chemically permissive panel.
+        {latex_table_block(ctx.results_dir, "table_s_egfr_retrieval_metrics_full", "table_s_egfr_retrieval_metrics_full_caption.txt", "tab:egfr_full_metrics", fallback="Full EGFR retrieval benchmark including the exploratory combined score.")}
+        {latex_table_block(ctx.results_dir, "table_s_top_egfr_retrieval_hits", "table_s_top_egfr_retrieval_hits_caption.txt", "tab:egfr_top_hits", fallback="Top exploratory ZINC hits from the EGFR retrieval benchmark.")}
+
+        \\subsection{{Archived EGFR Interpolation Outputs}}
+        For continuity with the earlier case-study workflow, the legacy EGFR interpolation figure and the corresponding archival retrieval tables are retained here as supplementary outputs. These artifacts follow the earlier interpolation-centered presentation and should be interpreted with the same leakage-aware caution as the primary EGFR retrieval analysis. They are useful mainly for comparing how the updated retrieval framing changed the presentation, not for adding a qualitatively different scientific claim.
+        {latex_figure_block(ctx.results_dir, "fig4_egfr_interpolation_retrieval", "fig4_egfr_interpolation_retrieval_caption.txt", fallback="Archived EGFR interpolation-guided retrieval view.")}
+        {latex_table_block(ctx.results_dir, "table4_egfr_interpolation_metrics", "table4_egfr_interpolation_metrics_caption.txt", "tab:egfr_legacy_metrics", fallback="Archived EGFR interpolation-guided retrieval metrics.")}
+        {latex_table_block(ctx.results_dir, "table5_top_egfr_interpolation_hits", "table5_top_egfr_interpolation_hits_caption.txt", "tab:egfr_legacy_hits", fallback="Archived top EGFR interpolation retrieval hits.")}
+
+        \\section{{Interpretability Outputs}}
+        The per-complex table below resolves the heterogeneity behind the structural-localization summary and is most useful once the panel-level trend is already clear.
+        {latex_table_block(ctx.results_dir, "table_s_interpretability_per_complex", "table_s_interpretability_per_complex_caption.txt", "tab:interpretability_per_complex", fallback="Per-complex structural localization benchmark metrics.")}
+
+        \\section{{Local Design Outputs}}
+        The remaining local-design materials provide compound-level context for the EGFR-conditioned analog-proposal benchmark after the main results establish the distribution-level comparison across generators.
+
+        \\subsection{{Diffusion Analog Gallery}}
+        The gallery highlights the highest-ranked diffusion proposals under the same multi-criterion ranking procedure used in the main local-design comparison. It is intended as a visual complement to the quantitative generator comparison rather than as independent evidence of optimization quality.
+        {latex_figure_block(ctx.results_dir, "fig3_egfr_dasatinib_generation", "fig3_egfr_dasatinib_generation_caption.txt", width="0.78\\linewidth", fallback="Supplementary diffusion analog gallery.")}
+
+        \\subsection{{Ranked Diffusion Analog Table}}
+        The ranked table provides compound-level detail for the highest-priority diffusion proposals, allowing the main results to remain focused on comparative generator behavior.
+        {latex_table_block(ctx.results_dir, "table2_top20_generated_compounds", "table2_top20_generated_compounds_caption.txt", "tab:diffusion_gallery", fallback="Top diffusion-generated analogs ranked within the EGFR local-design benchmark.")}
+        \\end{{document}}
+        """
+    ).strip() + "\n"
+
+
 def run_manuscript_section(ctx: PublicationContext) -> Dict[str, Any]:
     write_text(
         ctx.results_dir / "fig0_model_architecture_caption.txt",
         (
-            "DeepDTA-iBAM architecture and evaluation workflow. Ligands are converted from SMILES "
-            "strings into atom-bond graphs and encoded by a multi-layer graph attention network, whereas protein "
-            "sequences are represented as cached residue-level ESM-C embeddings and compressed by a protein "
-            "adapter. Bidirectional ligand-to-target and target-to-ligand cross-attention fuses atom and residue "
-            "tokens into a shared multimodal state that supports both affinity prediction and iBAM heatmap "
-            "extraction. A diffusion auxiliary head is trained on the ligand representation under target "
-            "conditioning and later reused for target-conditioned seeded molecular drug design."
+            "DeepDTA-iBAM architecture and evaluation workflow. Ligands are converted from SMILES strings into atom-"
+            "bond graphs and encoded by a multi-layer graph attention network, whereas protein sequences are "
+            "represented as cached residue-level embeddings from the ESM family and compressed by a protein adapter. "
+            "Bidirectional ligand-to-target and target-to-ligand cross-attention fuses atom and residue tokens into "
+            "a shared multimodal state that supports affinity prediction, iBAM heatmap extraction, and target-"
+            "conditioned latent analysis. A diffusion auxiliary head is trained on the ligand representation under "
+            "target conditioning and later reused for seeded local analog proposal. The same integrated checkpoint is "
+            "used throughout the reported analyses for benchmark, interpretability, retrieval, and "
+            "generation analyses."
             "\n"
         ),
     )
+    architecture_png = ctx.results_dir / "fig0_model_architecture.png"
+    default_architecture_png = Path("results") / "fig0_model_architecture.png"
+    if not architecture_png.exists() and default_architecture_png.exists():
+        if default_architecture_png.resolve() != architecture_png.resolve():
+            shutil.copyfile(default_architecture_png, architecture_png)
+
+    active_sections = {section for section in ctx.args.sections if section != "manuscript"}
+    required_assets = [
+        ctx.results_dir / "fig0_model_architecture_caption.txt",
+        architecture_png,
+    ]
+    section_asset_map = {
+        "benchmark": [
+            ctx.results_dir / "table1_benchmark.csv",
+            ctx.results_dir / "table1_benchmark.tex",
+            ctx.results_dir / "table1_benchmark_caption.txt",
+        ],
+        "diagnostics": [
+            ctx.results_dir / "fig5_residual_diagnostics.png",
+            ctx.results_dir / "fig5_residual_diagnostics.pdf",
+            ctx.results_dir / "fig5_residual_diagnostics_caption.txt",
+            ctx.results_dir / "table_s_standard_eval_bootstrap.csv",
+            ctx.results_dir / "table_s_standard_eval_bootstrap.tex",
+            ctx.results_dir / "table_s_standard_eval_bootstrap_caption.txt",
+            ctx.results_dir / "table_s_standard_split_overlap.csv",
+            ctx.results_dir / "table_s_standard_split_overlap.tex",
+            ctx.results_dir / "table_s_standard_split_overlap_caption.txt",
+        ],
+        "ablation": [
+            ctx.results_dir / "ablation_table.csv",
+            ctx.results_dir / "ablation_table.tex",
+            ctx.results_dir / "ablation_table_caption.txt",
+            ctx.results_dir / "fig_ablation_scaffold_summary.png",
+            ctx.results_dir / "fig_ablation_scaffold_summary.pdf",
+            ctx.results_dir / "fig_ablation_scaffold_summary_caption.txt",
+        ],
+        "ibam": [
+            ctx.results_dir / "fig_interpretability_summary.png",
+            ctx.results_dir / "fig_interpretability_summary.pdf",
+            ctx.results_dir / "fig_interpretability_summary_caption.txt",
+            ctx.results_dir / "table_interpretability_summary.csv",
+            ctx.results_dir / "table_interpretability_summary.tex",
+            ctx.results_dir / "table_interpretability_summary_caption.txt",
+            ctx.results_dir / "fig1_p4n_fak1_ibam.png",
+            ctx.results_dir / "fig1_p4n_fak1_ibam.pdf",
+            ctx.results_dir / "fig1_p4n_fak1_ibam_caption.txt",
+            ctx.results_dir / "table_s_interpretability_per_complex.csv",
+            ctx.results_dir / "table_s_interpretability_per_complex.tex",
+            ctx.results_dir / "table_s_interpretability_per_complex_caption.txt",
+        ],
+        "interpolation": [
+            ctx.results_dir / "fig_egfr_retrieval_comparison.png",
+            ctx.results_dir / "fig_egfr_retrieval_comparison.pdf",
+            ctx.results_dir / "fig_egfr_retrieval_comparison_caption.txt",
+            ctx.results_dir / "table_egfr_retrieval_metrics.csv",
+            ctx.results_dir / "table_egfr_retrieval_metrics.tex",
+            ctx.results_dir / "table_egfr_retrieval_metrics_caption.txt",
+            ctx.results_dir / "table_s_egfr_retrieval_metrics_full.csv",
+            ctx.results_dir / "table_s_egfr_retrieval_metrics_full.tex",
+            ctx.results_dir / "table_s_egfr_retrieval_metrics_full_caption.txt",
+            ctx.results_dir / "table_s_top_egfr_retrieval_hits.csv",
+            ctx.results_dir / "table_s_top_egfr_retrieval_hits.tex",
+            ctx.results_dir / "table_s_top_egfr_retrieval_hits_caption.txt",
+        ],
+        "generation": [
+            ctx.results_dir / "fig_generation_comparison.png",
+            ctx.results_dir / "fig_generation_comparison.pdf",
+            ctx.results_dir / "fig_generation_comparison_caption.txt",
+            ctx.results_dir / "table_generation_comparison_summary.csv",
+            ctx.results_dir / "table_generation_comparison_summary.tex",
+            ctx.results_dir / "table_generation_comparison_summary_caption.txt",
+            ctx.results_dir / "fig3_egfr_dasatinib_generation.png",
+            ctx.results_dir / "fig3_egfr_dasatinib_generation.pdf",
+            ctx.results_dir / "fig3_egfr_dasatinib_generation_caption.txt",
+            ctx.results_dir / "table2_top20_generated_compounds.csv",
+            ctx.results_dir / "table2_top20_generated_compounds.tex",
+            ctx.results_dir / "table2_top20_generated_compounds_caption.txt",
+        ],
+        "fishing": [
+            ctx.results_dir / "fig2_h1_drug_fishing.png",
+            ctx.results_dir / "fig2_h1_drug_fishing.pdf",
+            ctx.results_dir / "fig2_h1_drug_fishing_caption.txt",
+            ctx.results_dir / "table3_h1_drug_fishing_metrics.csv",
+            ctx.results_dir / "table3_h1_drug_fishing_metrics.tex",
+            ctx.results_dir / "table3_h1_drug_fishing_metrics_caption.txt",
+        ],
+    }
+    for section in active_sections:
+        required_assets.extend(section_asset_map.get(section, []))
+    ensure_required_assets(required_assets)
+
     write_text(Path("main.tex"), build_main_tex(ctx))
+    write_text(Path("supplementary.tex"), build_supplementary_tex(ctx))
     write_text(Path("references.bib"), build_references_bib())
-    for stale_path in (
-        Path("supplementary.tex"),
-        Path("supplementary.pdf"),
-        Path("supplementary.aux"),
-        Path("supplementary.log"),
-        Path("supplementary.out"),
-    ):
+    for stale_path in (Path("supplementary.aux"), Path("supplementary.log"), Path("supplementary.out")):
         if stale_path.exists():
             stale_path.unlink()
-    metrics = {"main_tex": "main.tex", "bib_file": "references.bib"}
+    metrics = {"main_tex": "main.tex", "supplementary_tex": "supplementary.tex", "bib_file": "references.bib"}
     ctx.update_section_metrics("manuscript", metrics)
     return metrics
 
@@ -3304,8 +4564,6 @@ def main() -> None:
         source_manifest_path=results_dir / "source_manifest.json",
     )
     ctx.load_existing_state()
-    if "ablation" not in args.sections:
-        ctx.metrics.pop("ablation", None)
     run_selected_sections(ctx)
     write_json(ctx.metrics_path, ctx.metrics)
     write_json(ctx.source_manifest_path, ctx.source_manifest)

@@ -1,0 +1,59 @@
+{
+  "n_actives": 300,
+  "n_decoys": 3000,
+  "property_balance": {
+    "MW": {
+      "active": 437.08,
+      "decoy": 432.64,
+      "std_diff": 0.056
+    },
+    "cLogP": {
+      "active": 4.44,
+      "decoy": 3.16,
+      "std_diff": 0.875
+    },
+    "HBD": {
+      "active": 1.87,
+      "decoy": 1.92,
+      "std_diff": -0.057
+    },
+    "HBA": {
+      "active": 6.41,
+      "decoy": 5.04,
+      "std_diff": 0.76
+    },
+    "RotB": {
+      "active": 6.18,
+      "decoy": 5.92,
+      "std_diff": 0.102
+    },
+    "charge": {
+      "active": 0.0,
+      "decoy": 0.36,
+      "std_diff": -0.914
+    }
+  },
+  "worst_abs_std_diff": 0.914,
+  "similarity_to_reference": {
+    "positives": [
+      0.058,
+      1.0
+    ],
+    "decoys": [
+      0.0213,
+      0.2135
+    ],
+    "gap": -0.1555,
+    "supports_disjoint": false,
+    "overlap_region": [
+      0.058,
+      0.2135
+    ],
+    "n_positives_in_overlap": 97,
+    "n_decoys_in_overlap": 2950
+  },
+  "ecfp_baseline": {
+    "auroc": 0.9922,
+    "auprc": 0.981
+  }
+}

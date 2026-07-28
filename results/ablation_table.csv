@@ -1,51 +1,11 @@
-model_name,split_type,metric,mean,sd,n
-abl_base,standard,RMSE,0.416894,0.026110,3
-abl_base,standard,MAE,0.253089,0.022615,3
-abl_base,standard,CI,0.863300,0.011315,3
-abl_base,standard,Pearson,0.871551,0.017273,3
-abl_base,standard,Spearman,0.851576,0.016577,3
-abl_base,scaffold,RMSE,0.735043,0.019527,3
-abl_base,scaffold,MAE,0.465610,0.018561,3
-abl_base,scaffold,CI,0.766892,0.019609,3
-abl_base,scaffold,Pearson,0.694464,0.035457,3
-abl_base,scaffold,Spearman,0.667073,0.046622,3
-abl_no_fusion,standard,RMSE,0.456144,0.007465,3
-abl_no_fusion,standard,MAE,0.295846,0.005830,3
-abl_no_fusion,standard,CI,0.859616,0.005476,3
-abl_no_fusion,standard,Pearson,0.869404,0.005960,3
-abl_no_fusion,standard,Spearman,0.848626,0.009900,3
-abl_no_fusion,scaffold,RMSE,0.765675,0.046007,3
-abl_no_fusion,scaffold,MAE,0.511518,0.037619,3
-abl_no_fusion,scaffold,CI,0.752949,0.015449,3
-abl_no_fusion,scaffold,Pearson,0.686072,0.004599,3
-abl_no_fusion,scaffold,Spearman,0.641893,0.033542,3
-abl_no_ranking,standard,RMSE,0.418509,0.022458,3
-abl_no_ranking,standard,MAE,0.251367,0.017596,3
-abl_no_ranking,standard,CI,0.863392,0.009620,3
-abl_no_ranking,standard,Pearson,0.870230,0.013856,3
-abl_no_ranking,standard,Spearman,0.851599,0.015145,3
-abl_no_ranking,scaffold,RMSE,0.722287,0.046198,3
-abl_no_ranking,scaffold,MAE,0.467337,0.040900,3
-abl_no_ranking,scaffold,CI,0.765776,0.030152,3
-abl_no_ranking,scaffold,Pearson,0.697394,0.053017,3
-abl_no_ranking,scaffold,Spearman,0.667783,0.067358,3
-abl_no_diffusion,standard,RMSE,0.463689,0.011186,3
-abl_no_diffusion,standard,MAE,0.302266,0.006946,3
-abl_no_diffusion,standard,CI,0.858186,0.005697,3
-abl_no_diffusion,standard,Pearson,0.869591,0.006654,3
-abl_no_diffusion,standard,Spearman,0.845353,0.009205,3
-abl_no_diffusion,scaffold,RMSE,0.741208,0.017286,3
-abl_no_diffusion,scaffold,MAE,0.496824,0.024859,3
-abl_no_diffusion,scaffold,CI,0.769106,0.024267,3
-abl_no_diffusion,scaffold,Pearson,0.716849,0.019383,3
-abl_no_diffusion,scaffold,Spearman,0.674100,0.050549,3
-abl_full,standard,RMSE,0.476133,0.019189,3
-abl_full,standard,MAE,0.305562,0.009047,3
-abl_full,standard,CI,0.856214,0.009780,3
-abl_full,standard,Pearson,0.858458,0.015051,3
-abl_full,standard,Spearman,0.837589,0.020306,3
-abl_full,scaffold,RMSE,0.760801,0.035821,3
-abl_full,scaffold,MAE,0.503979,0.024454,3
-abl_full,scaffold,CI,0.761468,0.030753,3
-abl_full,scaffold,Pearson,0.690914,0.046515,3
-abl_full,scaffold,Spearman,0.656036,0.070145,3
+Variant,Split,RMSE mean,RMSE sd,RMSE,MAE mean,MAE sd,MAE,CI mean,CI sd,CI,Pearson mean,Pearson sd,Pearson,Spearman mean,Spearman sd,Spearman
+Backbone only,Scaffold,0.735043,0.019527,0.735 ± 0.020,0.46561,0.018561,0.466 ± 0.019,0.766892,0.019609,0.767 ± 0.020,0.694464,0.035457,0.694 ± 0.035,0.667073,0.046622,0.667 ± 0.047
+DeepDTA-iBAM,Scaffold,0.760801,0.035821,0.761 ± 0.036,0.503979,0.024454,0.504 ± 0.024,0.761468,0.030753,0.761 ± 0.031,0.690914,0.046515,0.691 ± 0.047,0.656036,0.070145,0.656 ± 0.070
+No cross-attention,Scaffold,0.765675,0.046007,0.766 ± 0.046,0.511518,0.037619,0.512 ± 0.038,0.752949,0.015449,0.753 ± 0.015,0.686072,0.004599,0.686 ± 0.005,0.641893,0.033542,0.642 ± 0.034
+No diffusion head,Scaffold,0.741208,0.017286,0.741 ± 0.017,0.496824,0.024859,0.497 ± 0.025,0.769106,0.024267,0.769 ± 0.024,0.716849,0.019383,0.717 ± 0.019,0.6741,0.050549,0.674 ± 0.051
+No ranking loss,Scaffold,0.722287,0.046198,0.722 ± 0.046,0.467337,0.0409,0.467 ± 0.041,0.765776,0.030152,0.766 ± 0.030,0.697394,0.053017,0.697 ± 0.053,0.667783,0.067358,0.668 ± 0.067
+Backbone only,Standard,0.416894,0.02611,0.417 ± 0.026,0.253089,0.022615,0.253 ± 0.023,0.8633,0.011315,0.863 ± 0.011,0.871551,0.017273,0.872 ± 0.017,0.851576,0.016577,0.852 ± 0.017
+DeepDTA-iBAM,Standard,0.476133,0.019189,0.476 ± 0.019,0.305562,0.009047,0.306 ± 0.009,0.856214,0.00978,0.856 ± 0.010,0.858458,0.015051,0.858 ± 0.015,0.837589,0.020306,0.838 ± 0.020
+No cross-attention,Standard,0.456144,0.007465,0.456 ± 0.007,0.295846,0.00583,0.296 ± 0.006,0.859616,0.005476,0.860 ± 0.005,0.869404,0.00596,0.869 ± 0.006,0.848626,0.0099,0.849 ± 0.010
+No diffusion head,Standard,0.463689,0.011186,0.464 ± 0.011,0.302266,0.006946,0.302 ± 0.007,0.858186,0.005697,0.858 ± 0.006,0.869591,0.006654,0.870 ± 0.007,0.845353,0.009205,0.845 ± 0.009
+No ranking loss,Standard,0.418509,0.022458,0.419 ± 0.022,0.251367,0.017596,0.251 ± 0.018,0.863392,0.00962,0.863 ± 0.010,0.87023,0.013856,0.870 ± 0.014,0.851599,0.015145,0.852 ± 0.015

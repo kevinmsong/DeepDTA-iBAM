@@ -1,0 +1,26 @@
+short_name,journal,year,pmcid,interp_claim,quantitative,base_rate,similarity_panel
+DeepDTA,Bioinformatics,2018,PMC6129291,N,NA,NA,N
+DeepAffinity,Bioinformatics,2019,PMC6748780,Y,Y,N,N
+MolTrans,Bioinformatics,2021,PMC8098026,Y,N,NA,N
+MGraphDTA,Chem Sci,2022,PMC8768884,Y,Y,N,N
+AttentionSiteDTI,Brief Bioinform,2022,PMC9294423,Y,N,NA,N
+PIGNet,Chem Sci,2022,PMC8966633,N,NA,NA,N
+GraphATT-DTA,Biomedicines,2023,PMC9855982,Y,N,NA,N
+PocketDTA,J Cheminform,2024,PMC11502498,Y,N,NA,N
+CASTER-DTA,Brief Bioinform,2025,PMC12554097,Y,Y,N,N
+MIF-DTI,Brief Bioinform,2025,PMC12448477,N,NA,NA,N
+GGAP-CPI,J Chem Inf Model,2025,PMC12529763,Y,Y,Y,N
+CDPN,J Chem Inf Model,2025,PMC12690583,Y,Y,Y,N
+GPS-DTI,BMC Biol,2025,PMC12659342,Y,Y,N,N
+GenSPARC,Commun Chem,2025,PMC12823658,Y,Y,N,N
+HMM-DTA,J Cheminform,2026,PMC12892725,N,NA,NA,N
+ChemGLaM,J Cheminform,2026,PMC12922394,Y,Y,N,N
+DCI-SiteDTA,BMC Bioinformatics,2026,PMC13244979,Y,Y,N,N
+DTAP,Brief Bioinform,2026,PMC12908671,Y,N,NA,N
+TSEDTA,Bioinformatics,2026,PMC13211980,Y,Y,N,N
+DCGAT-DTI,Bioinform Adv,2026,PMC12776360,N,NA,NA,N
+TriDTI,Brief Bioinform,2026,PMC12874921,N,NA,NA,N
+MMCA,PLoS One,2026,PMC13286147,N,NA,NA,N
+Dual-encoder fusion,BMC Bioinformatics,2026,PMC13238130,N,NA,NA,N
+LiBRe,J Chem Inf Model,2026,PMC13080968,Y,Y,Y,N
+PhenoModel,Acta Pharm Sin B,2026,PMC13031149,N,NA,NA,N
