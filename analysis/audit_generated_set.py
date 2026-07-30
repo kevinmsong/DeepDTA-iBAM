@@ -275,7 +275,7 @@ def main():
         surviving=surviving,
         top_scaffold_sizes=[len(v) for _, v in top_scaffolds],
     )
-    json.dump(summary, open("audit_summary.json", "w"), indent=2)
+    json.dump(summary, open(_out("audit_summary.json"), "w"), indent=2)
 
     # ---------------------------------------------------------------------
     print("GENERATED-SET AUDIT")

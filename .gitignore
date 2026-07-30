@@ -88,6 +88,15 @@ analysis/*.json
 
 # Case-study caches (regenerate via the documented workflow)
 case_studies/
+FOXM1_Drug_Fishing_FDA_Approved/cache/
 
 # Agent tooling
 .claude/
+
+# Discarded decoy-matching attempt (see Additional file 1, Section S7)
+results/egfr_assay_panel.csv
+results/egfr_assay_panel_diagnostic.json
+results/zinc_decoy_pool.csv
+
+# Unrelated exploratory case study
+FOXM1_Drug_Fishing_FDA_Approved/

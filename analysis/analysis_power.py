@@ -182,7 +182,7 @@ def main():
                                for d in [delta_mode, 0.15, 0.10, 0.05]},
                    power_grid={k: attained_power(k, effect, var_re) for k in grid},
                    power_grid_t={k: attained_power_t(k, effect, var_re) for k in grid})
-    json.dump(summary, open("power_summary.json", "w"), indent=2)
+    json.dump(summary, open(_out("power_summary.json"), "w"), indent=2)
 
     print("VARIANCE COMPONENTS (5-complex panel)")
     print(f"  per-complex AUROC        {[round(x, 3) for x in vc['auroc']]}")

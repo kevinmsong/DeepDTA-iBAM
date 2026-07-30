@@ -96,7 +96,7 @@ def main():
         base_rate_papers=[r["short_name"] for r in base_yes],
         visual_only_papers=[r["short_name"] for r in visual],
     )
-    json.dump(summary, open("literature_audit_summary.json", "w"), indent=2)
+    json.dump(summary, open(_out("literature_audit_summary.json"), "w"), indent=2)
 
     print("LITERATURE AUDIT")
     print(f"  papers audited                              {n}")

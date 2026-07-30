@@ -206,7 +206,7 @@ def main():
                    permutation=perm,
                    reproduction=repro, n_residues=int(len(d)),
                    n_contacts=int(d.contact.sum()))
-    json.dump(summary, open("mixed_effects_summary.json", "w"), indent=2)
+    json.dump(summary, open(_out("mixed_effects_summary.json"), "w"), indent=2)
 
     print("MIXED-EFFECTS LOGISTIC REGRESSION (contact ~ r * mode + (1+r|complex))")
     for k in keys:
