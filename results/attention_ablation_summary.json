@@ -1,0 +1,69 @@
+{
+  "seed": 1337,
+  "n_pairs": 1200,
+  "n_bootstrap": 2000,
+  "subsampled": true,
+  "memory": {
+    "max_protein_length": 4136,
+    "estimated_bytes_per_pair": 3284447232,
+    "memory_budget_bytes": 18277485363,
+    "memory_source": "GlobalMemoryStatusEx",
+    "max_pairs_per_batch": 5,
+    "protein_token_budget": 20680,
+    "reason": "longest target 4136 residues, 3.06 GB per pair, budget 17.0 GB (GlobalMemoryStatusEx)"
+  },
+  "learned_gates": {
+    "atom_cross_gate": [
+      0.04513659328222275,
+      0.03959374874830246,
+      0.06057170405983925
+    ],
+    "residue_cross_gate": [
+      0.18766511976718903,
+      0.18275822699069977,
+      0.19697177410125732
+    ]
+  },
+  "intact": {
+    "rmse": 0.4475335586730447,
+    "mae": 0.2902631282907275,
+    "pearson_r": 0.8759750613614203,
+    "spearman_rho": 0.8434824913104291,
+    "concordance_index": 0.8612980324023036,
+    "seconds": 231.6
+  },
+  "cross_attention_off": {
+    "rmse": 0.5947860606212854,
+    "mae": 0.391841388168798,
+    "pearson_r": 0.7355194632324542,
+    "spearman_rho": 0.6991200934583172,
+    "concordance_index": 0.7809404958240362,
+    "seconds": 228.2
+  },
+  "cross_attention_half": {
+    "rmse": 0.4520953761017143,
+    "mae": 0.2949039467989359,
+    "pearson_r": 0.8641492130828328,
+    "spearman_rho": 0.8302328432409488,
+    "concordance_index": 0.8508221107064008,
+    "seconds": 224.6
+  },
+  "paired_cross_attention_off": {
+    "delta_rmse_intact_minus_ablated": -0.14788360901717856,
+    "delta_rmse_ci95": [
+      -0.18953313422039206,
+      -0.10697618234747315
+    ],
+    "delta_ci_intact_minus_ablated": 0.08035753657826739,
+    "delta_pearson_intact_minus_ablated": 0.14045559812896613
+  },
+  "paired_cross_attention_half": {
+    "delta_rmse_intact_minus_ablated": -0.004854143978907278,
+    "delta_rmse_ci95": [
+      -0.03103961592224569,
+      0.020731169356517413
+    ],
+    "delta_ci_intact_minus_ablated": 0.010475921695902835,
+    "delta_pearson_intact_minus_ablated": 0.01182584827858757
+  }
+}

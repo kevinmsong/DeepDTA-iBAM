@@ -1,0 +1,14 @@
+{
+  "test": {
+    "RMSE": 0.45173883461096803,
+    "MAE": 0.2950451528483713,
+    "CI": 0.8620010810657225,
+    "R2": 0.7049349984018968,
+    "Pearson": 0.8741329092545497,
+    "AttentionEntropy": 0.4345948679149117,
+    "AttentionMaxWeight": 0.47306856758934746,
+    "AttentionCollapseFrac": 0.2646781103782626,
+    "AttentionCollapseWarn": 0.0,
+    "reported_split": "standard test"
+  }
+}

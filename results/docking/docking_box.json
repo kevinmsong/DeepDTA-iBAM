@@ -1,0 +1,13 @@
+{
+  "pdb_id": "4WKQ",
+  "ligand_resname": "IRE",
+  "n_ligand_heavy_atoms": 31,
+  "center_x": 2.436,
+  "center_y": 193.199,
+  "center_z": 21.77,
+  "size_x": 25.4,
+  "size_y": 25.4,
+  "size_z": 28.739,
+  "box_padding_angstrom": 8.0,
+  "receptor_pdbqt": "receptor_4wkq.pdbqt"
+}

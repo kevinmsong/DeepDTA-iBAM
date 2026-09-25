@@ -20,6 +20,8 @@ Output
 Run from the submission directory:  python export_residue_level.py
 """
 
+from __future__ import annotations
+
 # --- path resolution -------------------------------------------------------
 # Paths are anchored to this file, not the working directory, so the scripts
 # run identically from a clean clone. LaTeX fragments are written to the
@@ -35,7 +37,6 @@ def _out(name):
     return str(OUT_DIR / name)
 # ---------------------------------------------------------------------------
 
-from __future__ import annotations
 
 import json
 import os

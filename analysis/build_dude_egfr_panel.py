@@ -29,6 +29,8 @@ Outputs
 Run from the submission directory:  python build_dude_egfr_panel.py
 """
 
+from __future__ import annotations
+
 # --- path resolution -------------------------------------------------------
 # Paths are anchored to this file, not the working directory, so the scripts
 # run identically from a clean clone. LaTeX fragments are written to the
@@ -44,7 +46,6 @@ def _out(name):
     return str(OUT_DIR / name)
 # ---------------------------------------------------------------------------
 
-from __future__ import annotations
 
 import csv
 import json
@@ -178,7 +179,7 @@ def main():
     )
     json.dump(out, open(DIAG, "w"), indent=2)
 
-    print("\nPROPERTY BALANCE (active vs decoy, standardised difference)")
+    print("\nPROPERTY BALANCE (active vs decoy, standardized difference)")
     for n, v in balance.items():
         print(f"  {n:6s} {v['active']:8.2f}  {v['decoy']:8.2f}  {v['std_diff']:+.3f}")
     print(f"  worst |std diff| {out['worst_abs_std_diff']}")

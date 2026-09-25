@@ -1,0 +1,9 @@
+{
+  "n_ligands": 3300,
+  "n_residue_positions": 1210,
+  "sequence_length": 1210,
+  "attention_key": "layer_0_atom_to_residue,layer_1_atom_to_residue,layer_2_atom_to_residue",
+  "profile_definition": "mean over the ligand's real atoms of atom-to-residue attention, heads averaged",
+  "checkpoint_dir": "checkpoints",
+  "seconds": 1039.2
+}

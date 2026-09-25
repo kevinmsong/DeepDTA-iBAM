@@ -18,6 +18,8 @@ Reads results/dude_egfr_panel.csv (from build_dude_egfr_panel.py) and writes
 Run from the submission directory:  python score_kinase_panel.py
 """
 
+from __future__ import annotations
+
 # --- path resolution -------------------------------------------------------
 # Paths are anchored to this file, not the working directory, so the scripts
 # run identically from a clean clone. LaTeX fragments are written to the
@@ -33,7 +35,6 @@ def _out(name):
     return str(OUT_DIR / name)
 # ---------------------------------------------------------------------------
 
-from __future__ import annotations
 
 import csv
 import json

@@ -1,0 +1,26 @@
+{
+  "n_complexes": 5,
+  "note_k": "k equals the number of true contacts in each complex, not 10",
+  "note_chance": "expected overlap for a random top-k draw equals k/n, the contact base rate",
+  "atom_base_rate_min": 0.9629629629629629,
+  "atom_base_rate_max": 1.0,
+  "n_complexes_atom_single_class": 4,
+  "residue_base_rate_min": 0.05714285714285714,
+  "residue_base_rate_max": 0.09505703422053231,
+  "residue_overlap_mean": 0.1119364699627857,
+  "residue_base_rate_mean": 0.07283097554172394,
+  "residue_excess_mean": 0.03910549442106178,
+  "residue_excess_ci95": [
+    -0.01499276441277348,
+    0.09320375325489705
+  ],
+  "residue_excess_ci_excludes_zero": false,
+  "atom_overlap_mean": 0.9923076923076923,
+  "atom_base_rate_mean": 0.9925925925925926,
+  "atom_excess_mean": -0.0002849002849002691,
+  "atom_excess_ci95": [
+    -0.0010759102863810795,
+    0.0005061097165805412
+  ],
+  "atom_excess_ci_excludes_zero": false
+}

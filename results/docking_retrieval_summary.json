@@ -1,0 +1,94 @@
+{
+  "seed": 1337,
+  "n_bootstrap": 10000,
+  "score_convention": "Vina reports binding free energy; negated for ranking",
+  "panel": {
+    "n_candidates_total": 3300,
+    "n_docked": 760,
+    "n_failed": 2540,
+    "n_actives_docked": 300,
+    "n_decoys_docked": 460,
+    "active_docking_rate": 1.0,
+    "decoy_docking_rate": 0.15333333333333332,
+    "base_rate": 0.39473684210526316
+  },
+  "metrics": {
+    "vina": {
+      "auroc": 0.648340579710145,
+      "auprc": 0.49331436115712224,
+      "bedroc20": 0.4630321623678126,
+      "ef_1pct": 0.9499999999975933,
+      "ef_5pct": 1.0666666666639644,
+      "recovery_10pct": 0.12666666666666668
+    },
+    "deepdta_ibam": {
+      "auroc": 0.8361376811594202,
+      "auprc": 0.836050694779267,
+      "bedroc20": 0.9764378479469693,
+      "ef_1pct": 2.5333333333269157,
+      "ef_5pct": 2.466666666660418,
+      "recovery_10pct": 0.25
+    },
+    "ecfp_nearest_active": {
+      "auroc": 0.9920398550724637,
+      "auprc": 0.9923821594281512,
+      "bedroc20": 0.9999197102605886,
+      "ef_1pct": 2.5333333333269157,
+      "ef_5pct": 2.5333333333269157,
+      "recovery_10pct": 0.25333333333333335
+    },
+    "ecfp_full_panel_reference": {
+      "auroc": 0.9920398550724637,
+      "auprc": 0.9923821594281512,
+      "bedroc20": 0.9999197102605886,
+      "ef_1pct": 2.5333333333269157,
+      "ef_5pct": 2.5333333333269157,
+      "recovery_10pct": 0.25333333333333335
+    }
+  },
+  "paired": {
+    "vina_minus_model": {
+      "delta_auroc_mean": -0.18795632957844982,
+      "ci95": [
+        -0.23677493497096974,
+        -0.13893627487950674
+      ],
+      "p_two_sided": 0.0001,
+      "n_resamples": 10000
+    },
+    "ecfp_minus_model": {
+      "delta_auroc_mean": 0.15581420320714992,
+      "ci95": [
+        0.1254997188112039,
+        0.18912511783053051
+      ],
+      "p_two_sided": 0.0001,
+      "n_resamples": 10000
+    },
+    "ecfp_minus_vina": {
+      "delta_auroc_mean": 0.34377053278559977,
+      "ci95": [
+        0.30473821078856894,
+        0.3846240181216319
+      ],
+      "p_two_sided": 0.0001,
+      "n_resamples": 10000
+    }
+  },
+  "generated_analogs": {
+    "n_analogs_docked": 56,
+    "analog_mean_kcal": -8.363767857142857,
+    "analog_sd_kcal": 0.3756833284984686,
+    "analog_best_kcal": -9.075,
+    "analog_median_kcal": -8.3775,
+    "dasatinib_seed_kcal": -7.646,
+    "n_analogs_better_than_seed": 55,
+    "frac_analogs_better_than_seed": 0.9821428571428571,
+    "mean_delta_vs_seed": -0.7177678571428574
+  },
+  "docking_cost": {
+    "median_seconds_per_ligand": 103.80000000000001,
+    "mean_seconds_per_ligand": 119.87736842105264,
+    "note": "wall clock under 14-way parallelism on CPU"
+  }
+}

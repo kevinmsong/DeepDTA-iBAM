@@ -1,0 +1,217 @@
+{
+  "seed": 1337,
+  "environment": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 141 Stepping 1, GenuineIntel",
+    "python": "3.13.14",
+    "torch": "2.9.1+cpu",
+    "device": "cpu",
+    "torch_threads": 8,
+    "cuda_available": false
+  },
+  "note": "CPU inference timings; the released checkpoint was trained on GPU",
+  "parameters": {
+    "total_parameters": 41537945,
+    "by_module": {
+      "gat": 2021441,
+      "protein_adapter": 13338625,
+      "fusion": 19702792,
+      "affinity_head": 5776385,
+      "diffusion": 698702,
+      "other": 0
+    },
+    "by_module_fraction": {
+      "gat": 0.04866492552773133,
+      "protein_adapter": 0.3211190394710186,
+      "fusion": 0.47433237248496524,
+      "affinity_head": 0.13906284964265805,
+      "diffusion": 0.016820812873626752,
+      "other": 0.0
+    },
+    "interaction_map_parameter_share": 0.47433237248496524,
+    "scoring_only_parameters": 40839243
+  },
+  "caches": {
+    "protein_embedding_cache_bytes": 508700633,
+    "sample_cache_build_seconds": 0.2,
+    "n_unique_proteins_in_sample": 132,
+    "n_unique_ligands_in_sample": 235
+  },
+  "memory_limits": [
+    {
+      "batch_size": 64,
+      "collect_attention": false,
+      "error": "[enforce fail at alloc_cpu.cpp:121] data. DefaultCPUAllocator: not enough memory: you tried to allocate 34898706432 bytes."
+    },
+    {
+      "batch_size": 64,
+      "collect_attention": true,
+      "error": "[enforce fail at alloc_cpu.cpp:121] data. DefaultCPUAllocator: not enough memory: you tried to allocate 34898706432 bytes."
+    }
+  ],
+  "throughput": [
+    {
+      "batch_size": 1,
+      "observed_pairs_per_batch_median": 1.0,
+      "collect_attention": false,
+      "pairs_timed": 254,
+      "batches_timed": 254,
+      "seconds_per_batch_median": 0.14486905000012484,
+      "seconds_per_batch_p95": 0.42831965999985183,
+      "pairs_per_second": 4.9015287316211165,
+      "ms_per_pair": 204.0179818897569
+    },
+    {
+      "batch_size": 1,
+      "observed_pairs_per_batch_median": 1.0,
+      "collect_attention": true,
+      "pairs_timed": 254,
+      "batches_timed": 254,
+      "seconds_per_batch_median": 0.14921545000015612,
+      "seconds_per_batch_p95": 0.4589480550004737,
+      "pairs_per_second": 4.770598385939739,
+      "ms_per_pair": 209.6173098425711
+    },
+    {
+      "batch_size": 4,
+      "observed_pairs_per_batch_median": 4.0,
+      "collect_attention": false,
+      "pairs_timed": 248,
+      "batches_timed": 62,
+      "seconds_per_batch_median": 0.5730733999998847,
+      "seconds_per_batch_p95": 1.5997610050004367,
+      "pairs_per_second": 4.616005098674207,
+      "ms_per_pair": 216.63754233876745
+    },
+    {
+      "batch_size": 4,
+      "observed_pairs_per_batch_median": 4.0,
+      "collect_attention": true,
+      "pairs_timed": 248,
+      "batches_timed": 62,
+      "seconds_per_batch_median": 0.583938799999487,
+      "seconds_per_batch_p95": 1.5895556750012472,
+      "pairs_per_second": 4.681054881682798,
+      "ms_per_pair": 213.6270616935191
+    },
+    {
+      "batch_size": 8,
+      "observed_pairs_per_batch_median": 8.0,
+      "collect_attention": false,
+      "pairs_timed": 240,
+      "batches_timed": 30,
+      "seconds_per_batch_median": 1.1526180500004557,
+      "seconds_per_batch_p95": 2.8751217449997055,
+      "pairs_per_second": 4.304269129076261,
+      "ms_per_pair": 232.32747999998082
+    },
+    {
+      "batch_size": 8,
+      "observed_pairs_per_batch_median": 8.0,
+      "collect_attention": true,
+      "pairs_timed": 240,
+      "batches_timed": 30,
+      "seconds_per_batch_median": 1.1391955000008238,
+      "seconds_per_batch_p95": 2.9148853750002672,
+      "pairs_per_second": 4.279358597608802,
+      "ms_per_pair": 233.67987916665243
+    },
+    {
+      "batch_size": 16,
+      "observed_pairs_per_batch_median": 16.0,
+      "collect_attention": false,
+      "pairs_timed": 224,
+      "batches_timed": 14,
+      "seconds_per_batch_median": 2.3708612500004165,
+      "seconds_per_batch_p95": 15.100789139998952,
+      "pairs_per_second": 3.3843503244364173,
+      "ms_per_pair": 295.47768526785893
+    },
+    {
+      "batch_size": 16,
+      "observed_pairs_per_batch_median": 16.0,
+      "collect_attention": true,
+      "pairs_timed": 224,
+      "batches_timed": 14,
+      "seconds_per_batch_median": 2.375289200000225,
+      "seconds_per_batch_p95": 14.640935540000092,
+      "pairs_per_second": 3.4171445495012334,
+      "ms_per_pair": 292.6419955357054
+    },
+    {
+      "batch_size": 32,
+      "observed_pairs_per_batch_median": 32.0,
+      "collect_attention": false,
+      "pairs_timed": 192,
+      "batches_timed": 6,
+      "seconds_per_batch_median": 5.864647600000353,
+      "seconds_per_batch_p95": 47.79361597500065,
+      "pairs_per_second": 2.1791092617595385,
+      "ms_per_pair": 458.903102083345
+    },
+    {
+      "batch_size": 32,
+      "observed_pairs_per_batch_median": 32.0,
+      "collect_attention": true,
+      "pairs_timed": 192,
+      "batches_timed": 6,
+      "seconds_per_batch_median": 5.891806300001008,
+      "seconds_per_batch_p95": 52.11831600000005,
+      "pairs_per_second": 2.044031515537948,
+      "ms_per_pair": 489.2292473958359
+    }
+  ],
+  "interaction_map_marginal_cost": {
+    "1": {
+      "ms_per_pair_without_maps": 204.0179818897569,
+      "ms_per_pair_with_maps": 209.6173098425711,
+      "relative_overhead": 0.027445266838488136
+    },
+    "4": {
+      "ms_per_pair_without_maps": 216.63754233876745,
+      "ms_per_pair_with_maps": 213.6270616935191,
+      "relative_overhead": -0.013896394007926416
+    },
+    "8": {
+      "ms_per_pair_without_maps": 232.32747999998082,
+      "ms_per_pair_with_maps": 233.67987916665243,
+      "relative_overhead": 0.005821089983293115
+    },
+    "16": {
+      "ms_per_pair_without_maps": 295.47768526785893,
+      "ms_per_pair_with_maps": 292.6419955357054,
+      "relative_overhead": -0.009596967465014816
+    },
+    "32": {
+      "ms_per_pair_without_maps": 458.903102083345,
+      "ms_per_pair_with_maps": 489.2292473958359,
+      "relative_overhead": 0.06608398412391447
+    }
+  },
+  "scaling": {
+    "protein_length": {
+      "slope_ms_per_unit": 0.47651899320404373,
+      "intercept_ms": -139.44634846038295,
+      "pearson_r": 0.9194903356368642,
+      "n": 254,
+      "range": [
+        292.0,
+        4128.0
+      ]
+    },
+    "ligand_atoms": {
+      "slope_ms_per_unit": -0.8529465246383916,
+      "intercept_ms": 232.17566306246832,
+      "pearson_r": -0.02776600808145639,
+      "n": 254,
+      "range": [
+        11.0,
+        58.0
+      ]
+    }
+  },
+  "single_pair_latency_ms": {
+    "median": 151.2841000012486,
+    "p95": 433.6732949993347
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "seed": 1337,
+  "n_folds": 5,
+  "export_meta": {
+    "n_ligands": 3300,
+    "n_residue_positions": 1210,
+    "sequence_length": 1210,
+    "attention_key": "layer_0_atom_to_residue,layer_1_atom_to_residue,layer_2_atom_to_residue",
+    "profile_definition": "mean over the ligand's real atoms of atom-to-residue attention, heads averaged",
+    "checkpoint_dir": "checkpoints",
+    "seconds": 1039.2
+  },
+  "variance_decomposition": {
+    "n_ligands": 3300,
+    "n_residues": 1210,
+    "ss_total": 1.2945621749972898,
+    "frac_residue_main_effect": 0.9274490888606608,
+    "frac_ligand_main_effect": 2.938278480272374e-17,
+    "frac_ligand_by_residue_interaction": 0.07255091113933917
+  },
+  "profile_similarity": {
+    "corr_to_mean_profile_mean": 0.9684907919057159,
+    "corr_to_mean_profile_min": 0.7052833233240329,
+    "corr_to_mean_profile_p05": 0.9118623443494608,
+    "pairwise_corr_mean": 0.9384274857032435,
+    "pairwise_corr_p05": 0.8250305173550296,
+    "pairwise_corr_min": 0.43533500637368494,
+    "pairwise_subsample": 400
+  },
+  "n_residue_features_used": 1210,
+  "affinity_regression": {
+    "target": "model predicted affinity (panel, EGFR-conditioned)",
+    "r2_from_attention_profile": 0.3322318190069501,
+    "r2_shuffled_null": -0.029269084009742485
+  },
+  "classification": {
+    "base_rate": 0.09090909090909091,
+    "auroc_from_attention_profile": 0.98358,
+    "auroc_from_descriptors": 0.9088333333333333,
+    "auroc_from_descriptors_plus_profile": 0.9875522222222222,
+    "auroc_from_profile_residualised_on_descriptors": 0.9574811111111111,
+    "auroc_attention_shuffled_null": 0.4986177777777778,
+    "auroc_model_score": 0.8388844444444445,
+    "auroc_ecfp_baseline": 0.9921966666666666,
+    "descriptor_names": [
+      "MW",
+      "cLogP",
+      "TPSA",
+      "HBD",
+      "HBA",
+      "RotB",
+      "Rings",
+      "HeavyAtoms",
+      "FracCSP3",
+      "FormalCharge"
+    ],
+    "note": "the profile and descriptor rows are supervised probes fitted with cross-validation; the model-score and ECFP rows are zero-shot rankers and are not directly comparable to them"
+  }
+}

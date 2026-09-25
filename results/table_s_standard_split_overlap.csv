@@ -1,0 +1,7 @@
+Subset,Rows,Unique compounds,Unique targets
+Train,106428.0,2068,229
+Validation,5913.0,1592,214
+Test,5913.0,1587,219
+Train/Validation overlap,,1592,214
+Train/Test overlap,,1587,219
+Validation/Test overlap,,1318,209

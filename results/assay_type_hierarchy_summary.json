@@ -1,0 +1,44 @@
+{
+  "target": "CHEMBL203",
+  "type_priority": "Kd > Ki > IC50",
+  "current_rule": "highest pChEMBL per parent molecule, ties by lowest nM",
+  "min_pchembl": 7.0,
+  "min_reference_similarity": 0.4,
+  "local_composition": {
+    "family_size": 347,
+    "family_type_counts": {
+      "IC50": 335,
+      "Kd": 10,
+      "Ki": 2
+    },
+    "h1_size": 20,
+    "h1_multi_type_molecules": 5,
+    "h1_type_strings": {
+      "Ki": 12,
+      "IC50": 3,
+      "IC50;Ki": 2,
+      "Alpha;EC50;IC50;Ki": 1,
+      "Activity;Ki": 1,
+      "Alpha;IC50;Ki": 1
+    }
+  },
+  "n_records": 19527,
+  "n_pairs": 10583,
+  "record_type_counts": {
+    "IC50": 18119,
+    "KD": 875,
+    "KI": 533
+  },
+  "n_pairs_multi_type": 180,
+  "frac_pairs_multi_type": 0.01700840971369177,
+  "n_pairs_type_changed": 64,
+  "n_pairs_value_changed": 55,
+  "median_abs_pchembl_shift_when_changed": 0.75,
+  "max_abs_pchembl_shift": 4.840000000000001,
+  "n_potent_current_rule": 5942,
+  "n_potent_priority_rule": 5928,
+  "n_gained_under_priority": 0,
+  "n_lost_under_priority": 14,
+  "jaccard_potent_sets": 0.9976438909458095,
+  "status": "ok"
+}

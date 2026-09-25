@@ -74,7 +74,8 @@ python case_studies_results_generation.py \
   --device cuda
 ```
 
-This generates all figures (300 dpi PNG + PDF), tables (CSV + LaTeX), captions, metrics, and the manuscript source files.
+This generates the original case-study figures, tables (CSV + LaTeX), captions and metrics.
+The manuscript figures are built separately by `analysis/make_figures_ieee.py` at 600 dpi.
 
 ## Repository Structure
 
@@ -134,18 +135,59 @@ resolve paths relative to their own location, so they run from a clean clone
 without arguments:
 
 ```bash
-python analysis/analysis_revision.py        # meta-analysis and statistical tests
-python analysis/analysis_power.py           # power derivation
-python analysis/audit_generated_set.py      # analog-set audit
-python analysis/analysis_literature_audit.py
-python analysis/analysis_mixed_effects.py   # needs interpretability_residue_level.csv
+# Benchmarks and statistics
+python analysis/analysis_benchmark_metrics.py    # KIBA regression and classification metrics
+python analysis/analysis_revision.py             # meta-analysis, panel separation, generator tests
+python analysis/analysis_mixed_effects.py        # residue-level GLMM, exact permutation bound
+python analysis/analysis_power.py                # power derivation for the localization panel
+python analysis/analysis_overlap_chance.py       # chance-referenced top-k contact overlap
+python analysis/analysis_contact_information.py  # what the interaction maps encode
+python analysis/analysis_attention_ablation.py   # inference-time ablation of the fusion gates
+python analysis/analysis_efficiency.py           # CPU latency, throughput and parameter profile
+python analysis/analysis_assay_type_hierarchy.py # sensitivity to the activity consolidation rule
+python analysis/analysis_docking_retrieval.py    # retrieval against Vina and a fingerprint baseline
+python analysis/analysis_literature_audit.py     # reporting practice in published work
+python analysis/audit_generated_set.py           # analog-set audit and scaffold diversity
+
+# Figures and manuscript checks
+python analysis/make_figures_ieee.py             # the six main-text figures, 600 dpi PDF + PNG
+python analysis/make_figure_scaffold_ablation.py # the supplementary ablation figure
+python analysis/check_colorblind.py              # color-vision-deficiency and greyscale audit
+python analysis/verify_manuscript_numbers.py     # every headline value against its artifact
+python analysis/audit_captions.py <manuscript.tex>
+python analysis/wordcount_tex.py <manuscript.tex>
 ```
 
 Two scripts additionally require the model checkpoint and cached embeddings,
 which are not redistributed: `export_residue_level.py` regenerates the
 residue-level export, and `score_kinase_panel.py` rescores the in-domain panel.
-Their outputs are released here so the downstream statistics can be checked
-without rerunning inference.
+`export_panel_attention.py` regenerates `results/panel_attention_residue.npy`,
+the 3,300 x 1,210 attention profile matrix, which is released here so the
+interaction-map analysis can be rerun without a GPU.
+
+Scripts that run inference size their batch from the longest target sequence
+and the memory available, via `analysis/memory_guard.py`, because memory is
+governed by target length rather than by library size.
+
+### Docking
+
+The docking comparison uses AutoDock Vina 1.2.7, which is a third-party binary
+and is not redistributed here. Download it from
+<https://github.com/ccsb-scripps/AutoDock-Vina/releases> and place the
+executable at `tools/vina` (`tools/vina.exe` on Windows). Receptor preparation
+and the search box are released:
+
+```bash
+python analysis/prep_docking_receptor.py   # writes results/docking/receptor_4wkq.pdbqt
+                                           # and results/docking/docking_box.json
+python analysis/analysis_docking_baseline.py --all-actives --decoy-limit 460 --workers 14
+python analysis/analysis_docking_retrieval.py
+```
+
+Vina regenerates its grid maps from the receptor and box on each run; the maps
+themselves are 146 MB and are not committed. Per-ligand scores from the run
+reported in the manuscript are in `results/docking/vina_scores.csv`, so the
+retrieval analysis can be reproduced without re-docking.
 
 ## Configuration Profiles
 
