@@ -1,0 +1,1597 @@
+{
+  "editorial": {
+    "abstract": {
+      "words": 218,
+      "words_splitting_hyphenated_terms": 230
+    },
+    "table_headings": [
+      {
+        "document": "main",
+        "table_number": 1,
+        "heading": "Predictive accuracy on the KIBA standard-split test partition.",
+        "words": 9,
+        "words_including_table_number_label": 11
+      },
+      {
+        "document": "main",
+        "table_number": 2,
+        "heading": "Inference-time ablation of the cross-attention pathway, on 1,200\nheld-out KIBA pairs.",
+        "words": 14,
+        "words_including_table_number_label": 16
+      },
+      {
+        "document": "main",
+        "table_number": 3,
+        "heading": "Retraining ablation: concordance index across three independently\nretrained seeds per variant.",
+        "words": 11,
+        "words_including_table_number_label": 13
+      },
+      {
+        "document": "main",
+        "table_number": 4,
+        "heading": "CPU inference latency per pair, with and without collecting the\ninteraction maps.",
+        "words": 12,
+        "words_including_table_number_label": 14
+      },
+      {
+        "document": "main",
+        "table_number": 5,
+        "heading": "In-domain EGFR retrieval on the docked set: 300 assay-defined actives\nand 460 property-matched decoys.",
+        "words": 17,
+        "words_including_table_number_label": 19
+      },
+      {
+        "document": "supplementary",
+        "table_number": 1,
+        "heading": "Bootstrap uncertainty for the single-checkpoint standard-split evaluation.",
+        "words": 9,
+        "words_including_table_number_label": 11
+      },
+      {
+        "document": "supplementary",
+        "table_number": 2,
+        "heading": "Full EGFR retrieval benchmark, including the exploratory combined path-plus-affinity score.",
+        "words": 12,
+        "words_including_table_number_label": 14
+      },
+      {
+        "document": "supplementary",
+        "table_number": 3,
+        "heading": "Top 10 exploratory ZINC candidates ranked by the combined interpolation and affinity score.",
+        "words": 13,
+        "words_including_table_number_label": 15
+      },
+      {
+        "document": "supplementary",
+        "table_number": 4,
+        "heading": "Label composition of the structural-localization benchmark.",
+        "words": 7,
+        "words_including_table_number_label": 9
+      },
+      {
+        "document": "supplementary",
+        "table_number": 5,
+        "heading": "Per-complex structural localization benchmark across 5 kinase co-crystal complexes.",
+        "words": 11,
+        "words_including_table_number_label": 13
+      },
+      {
+        "document": "supplementary",
+        "table_number": 6,
+        "heading": "Structural audit of the 100 released diffusion analogs.",
+        "words": 8,
+        "words_including_table_number_label": 10
+      },
+      {
+        "document": "supplementary",
+        "table_number": 7,
+        "heading": "Top 10 diffusion analogs ranked by chemical filters and drug-likeness.",
+        "words": 11,
+        "words_including_table_number_label": 13
+      },
+      {
+        "document": "supplementary",
+        "table_number": 8,
+        "heading": "Statistical power by number of protein--ligand complexes.",
+        "words": 8,
+        "words_including_table_number_label": 10
+      },
+      {
+        "document": "supplementary",
+        "table_number": 9,
+        "heading": "Audit of 25 published drug--target affinity and compound--protein interaction studies.",
+        "words": 12,
+        "words_including_table_number_label": 14
+      }
+    ],
+    "table_count": 14,
+    "maximum_table_heading_words": 17
+  },
+  "engines": {
+    "pdflatex": "C:\\Users\\kevin\\AppData\\Local\\Programs\\MiKTeX\\miktex\\bin\\x64\\pdflatex.EXE",
+    "bibtex": "C:\\Users\\kevin\\AppData\\Local\\Programs\\MiKTeX\\miktex\\bin\\x64\\bibtex.EXE"
+  },
+  "visual_review": {
+    "status": "completed",
+    "date": "2026-09-26",
+    "main_pages_reviewed": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "supplementary_pages_reviewed": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "figures_reviewed": 11,
+    "tables_reviewed": 14,
+    "report": "visual_review.md",
+    "result": "No clipping, overlap, or layout defects requiring correction."
+  },
+  "documents": {
+    "main": {
+      "pages": 15,
+      "sha256": "26691fb95f315b6a04a0ae06b5e939b5abb059fdf0a32f739c4f8386d7f43761",
+      "text_sha256": "6618e7689f26592ce74823ce4c90cc474e925c32f51e027a16238cdae2c58d80",
+      "em_dash_count": 0,
+      "unresolved_marker_count": 0,
+      "pending_asset_count": 0,
+      "log_warnings": [],
+      "page_dimensions_points": [
+        [
+          576.0,
+          782.9290161132812
+        ],
+        [
+          576.0,
+          782.9290161132812
+        ],
+        [
+          576.0,
+          782.9290161132812
+        ],
+        [
+          576.0,
+          782.9290161132812
+        ],
+        [
+          576.0,
+          782.9290161132812
+        ],
+        [
+          576.0,
+          782.9290161132812
+        ],
+        [
+          576.0,
+          782.9290161132812
+        ],
+        [
+          576.0,
+          782.9290161132812
+        ],
+        [
+          576.0,
+          782.9290161132812
+        ],
+        [
+          576.0,
+          782.9290161132812
+        ],
+        [
+          576.0,
+          782.9290161132812
+        ],
+        [
+          576.0,
+          782.9290161132812
+        ],
+        [
+          576.0,
+          782.9290161132812
+        ],
+        [
+          576.0,
+          782.9290161132812
+        ],
+        [
+          576.0,
+          782.9290161132812
+        ]
+      ]
+    },
+    "supplementary": {
+      "pages": 12,
+      "sha256": "5713d834f0dbd201ab50a50478ef30ff608b996042ecd75d333ad44c5ca343b2",
+      "text_sha256": "3ee67df518979bbc98be597fbdd65dd77dd1fd26e4876c39ea99f26e9822ab51",
+      "em_dash_count": 0,
+      "unresolved_marker_count": 0,
+      "pending_asset_count": 0,
+      "log_warnings": [],
+      "page_dimensions_points": [
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ]
+      ]
+    },
+    "combined": {
+      "pages": 27,
+      "sha256": "aef0d52e38a8fd90340ea08123294edcc1db89d985edff36f51cfc57be9441d0",
+      "text_sha256": "36cd13c449a4bd0faaa41694230be46e820d3b4cdc4a23d17de5f8959884fc90",
+      "em_dash_count": 0,
+      "unresolved_marker_count": 0,
+      "pending_asset_count": 0,
+      "log_warnings": [],
+      "page_dimensions_points": [
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ]
+      ]
+    }
+  },
+  "errors": [],
+  "column_heading_checks": [
+    {
+      "source": "IEEE_Access_Submission\\main.tex",
+      "table_block": 1,
+      "heading": "Condition",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\main.tex",
+      "table_block": 1,
+      "heading": "Concordance",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\main.tex",
+      "table_block": 1,
+      "heading": "RMSE",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\main.tex",
+      "table_block": 1,
+      "heading": "Pearson r",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\main.tex",
+      "table_block": 2,
+      "heading": "Split",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\main.tex",
+      "table_block": 2,
+      "heading": "Variant",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\main.tex",
+      "table_block": 2,
+      "heading": "Concordance",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\main.tex",
+      "table_block": 2,
+      "heading": "(mean  SD)",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\main.tex",
+      "table_block": 2,
+      "heading": "p",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\main.tex",
+      "table_block": 3,
+      "heading": "Pairs per",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\main.tex",
+      "table_block": 3,
+      "heading": "Scores only",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\main.tex",
+      "table_block": 3,
+      "heading": "Maps collected",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\main.tex",
+      "table_block": 3,
+      "heading": "Difference",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\main.tex",
+      "table_block": 3,
+      "heading": "batch",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\main.tex",
+      "table_block": 3,
+      "heading": "(ms/pair)",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\main.tex",
+      "table_block": 3,
+      "heading": "(ms/pair)",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\supplementary.tex",
+      "table_block": 1,
+      "heading": "PDB",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\supplementary.tex",
+      "table_block": 1,
+      "heading": "Protein",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\supplementary.tex",
+      "table_block": 1,
+      "heading": "Residues",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\supplementary.tex",
+      "table_block": 1,
+      "heading": "Contact res.",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\supplementary.tex",
+      "table_block": 1,
+      "heading": "Res. rate",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\supplementary.tex",
+      "table_block": 1,
+      "heading": "Atoms",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\supplementary.tex",
+      "table_block": 1,
+      "heading": "Contact atoms",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\supplementary.tex",
+      "table_block": 1,
+      "heading": "Atom rate",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_generated_audit.tex",
+      "table_block": 1,
+      "heading": "Stage",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_generated_audit.tex",
+      "table_block": 1,
+      "heading": "Molecules",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_generated_audit.tex",
+      "table_block": 1,
+      "heading": "Unique SMILES",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_generated_audit.tex",
+      "table_block": 1,
+      "heading": "Murcko scaffolds",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_generated_audit.tex",
+      "table_block": 1,
+      "heading": "Generic frameworks",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_generated_top10.tex",
+      "table_block": 1,
+      "heading": "\\#",
+      "words": 0
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_generated_top10.tex",
+      "table_block": 1,
+      "heading": "Murcko framework (rings)",
+      "words": 3
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_generated_top10.tex",
+      "table_block": 1,
+      "heading": "MW (Da)",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_generated_top10.tex",
+      "table_block": 1,
+      "heading": "cLogP",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_generated_top10.tex",
+      "table_block": 1,
+      "heading": "QED",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_generated_top10.tex",
+      "table_block": 1,
+      "heading": "SA",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_generated_top10.tex",
+      "table_block": 1,
+      "heading": "Tanimoto",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_generated_top10.tex",
+      "table_block": 1,
+      "heading": "Lip.",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_generated_top10.tex",
+      "table_block": 1,
+      "heading": "Alert-free",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_literature_audit.tex",
+      "table_block": 1,
+      "heading": "Model / study",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_literature_audit.tex",
+      "table_block": 1,
+      "heading": "Venue",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_literature_audit.tex",
+      "table_block": 1,
+      "heading": "Year",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_literature_audit.tex",
+      "table_block": 1,
+      "heading": "Residue claim",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_literature_audit.tex",
+      "table_block": 1,
+      "heading": "Quantitative",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_literature_audit.tex",
+      "table_block": 1,
+      "heading": "Base rate",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_power.tex",
+      "table_block": 1,
+      "heading": "Complexes k",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_power.tex",
+      "table_block": 1,
+      "heading": "SE of pooled AUROC",
+      "words": 4
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_power.tex",
+      "table_block": 1,
+      "heading": "95% CI half-width",
+      "words": 4
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_power.tex",
+      "table_block": 1,
+      "heading": "Power (normal)",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_power.tex",
+      "table_block": 1,
+      "heading": "Power (t)",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_egfr_retrieval_metrics_full.tex",
+      "table_block": 1,
+      "heading": "Method",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_egfr_retrieval_metrics_full.tex",
+      "table_block": 1,
+      "heading": "AUROC",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_egfr_retrieval_metrics_full.tex",
+      "table_block": 1,
+      "heading": "AUPRC",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_egfr_retrieval_metrics_full.tex",
+      "table_block": 1,
+      "heading": "BEDROC20",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_egfr_retrieval_metrics_full.tex",
+      "table_block": 1,
+      "heading": "EF at 1%",
+      "words": 3
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_egfr_retrieval_metrics_full.tex",
+      "table_block": 1,
+      "heading": "EF at 5%",
+      "words": 3
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_egfr_retrieval_metrics_full.tex",
+      "table_block": 1,
+      "heading": "Recovery at 5%",
+      "words": 3
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_egfr_retrieval_metrics_full.tex",
+      "table_block": 1,
+      "heading": "Recovery at 10%",
+      "words": 3
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_interpretability_per_complex.tex",
+      "table_block": 1,
+      "heading": "PDB",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_interpretability_per_complex.tex",
+      "table_block": 1,
+      "heading": "Protein",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_interpretability_per_complex.tex",
+      "table_block": 1,
+      "heading": "Ligand",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_interpretability_per_complex.tex",
+      "table_block": 1,
+      "heading": "Residue AUROC",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_interpretability_per_complex.tex",
+      "table_block": 1,
+      "heading": "Atom AUROC",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_interpretability_per_complex.tex",
+      "table_block": 1,
+      "heading": "Residue top-k",
+      "words": 3
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_interpretability_per_complex.tex",
+      "table_block": 1,
+      "heading": "Atom top-k",
+      "words": 3
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_interpretability_per_complex.tex",
+      "table_block": 1,
+      "heading": "Residue mask",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_interpretability_per_complex.tex",
+      "table_block": 1,
+      "heading": "Atom mask",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_standard_eval_bootstrap.tex",
+      "table_block": 1,
+      "heading": "Metric",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_standard_eval_bootstrap.tex",
+      "table_block": 1,
+      "heading": "Estimate",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_standard_eval_bootstrap.tex",
+      "table_block": 1,
+      "heading": "95% CI lower",
+      "words": 3
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_standard_eval_bootstrap.tex",
+      "table_block": 1,
+      "heading": "95% CI upper",
+      "words": 3
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_top_egfr_retrieval_hits.tex",
+      "table_block": 1,
+      "heading": "Rank",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_top_egfr_retrieval_hits.tex",
+      "table_block": 1,
+      "heading": "ZINC ID",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_top_egfr_retrieval_hits.tex",
+      "table_block": 1,
+      "heading": "Nearest anchor",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_top_egfr_retrieval_hits.tex",
+      "table_block": 1,
+      "heading": "Tanimoto",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_top_egfr_retrieval_hits.tex",
+      "table_block": 1,
+      "heading": "Affinity",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_top_egfr_retrieval_hits.tex",
+      "table_block": 1,
+      "heading": "Path distance",
+      "words": 2
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_top_egfr_retrieval_hits.tex",
+      "table_block": 1,
+      "heading": "QED",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_top_egfr_retrieval_hits.tex",
+      "table_block": 1,
+      "heading": "SA",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_top_egfr_retrieval_hits.tex",
+      "table_block": 1,
+      "heading": "Lipinski",
+      "words": 1
+    },
+    {
+      "source": "IEEE_Access_Submission\\table_s_top_egfr_retrieval_hits.tex",
+      "table_block": 1,
+      "heading": "Alert-free",
+      "words": 2
+    },
+    {
+      "source": "results\\docking_revalidated\\table_docking_retrieval.tex",
+      "table_block": 1,
+      "heading": "Ranker",
+      "words": 1
+    },
+    {
+      "source": "results\\docking_revalidated\\table_docking_retrieval.tex",
+      "table_block": 1,
+      "heading": "AUROC",
+      "words": 1
+    },
+    {
+      "source": "results\\docking_revalidated\\table_docking_retrieval.tex",
+      "table_block": 1,
+      "heading": "AUPRC",
+      "words": 1
+    },
+    {
+      "source": "results\\docking_revalidated\\table_docking_retrieval.tex",
+      "table_block": 1,
+      "heading": "BEDROC20",
+      "words": 1
+    },
+    {
+      "source": "results\\docking_revalidated\\table_docking_retrieval.tex",
+      "table_block": 1,
+      "heading": "EF 1%",
+      "words": 2
+    },
+    {
+      "source": "results\\docking_revalidated\\table_docking_retrieval.tex",
+      "table_block": 1,
+      "heading": "EF 5%",
+      "words": 2
+    },
+    {
+      "source": "results\\docking_revalidated\\table_docking_retrieval.tex",
+      "table_block": 1,
+      "heading": "Rec.\\ 10%",
+      "words": 2
+    },
+    {
+      "source": "results\\table_benchmark_metrics_expanded.tex",
+      "table_block": 1,
+      "heading": "Metric",
+      "words": 1
+    },
+    {
+      "source": "results\\table_benchmark_metrics_expanded.tex",
+      "table_block": 1,
+      "heading": "Value",
+      "words": 1
+    },
+    {
+      "source": "results\\table_benchmark_metrics_expanded.tex",
+      "table_block": 1,
+      "heading": "95% CI",
+      "words": 2
+    }
+  ],
+  "qa_contact_sheets": [
+    "main_sheet_01.jpg",
+    "main_sheet_02.jpg",
+    "main_sheet_03.jpg",
+    "main_sheet_04.jpg",
+    "supplementary_sheet_01.jpg",
+    "supplementary_sheet_02.jpg",
+    "supplementary_sheet_03.jpg"
+  ],
+  "figures": [
+    {
+      "figure": "1",
+      "document": "main",
+      "display_width_inches": 6.9893700013837,
+      "include_options": "width=\\textwidth",
+      "source": "results\\fig_architecture.pdf",
+      "file_stem": "fig_architecture",
+      "native_pdf_width_inches": 6.98937013414171,
+      "pixels": [
+        4194,
+        2329
+      ],
+      "png_dpi_metadata": [
+        599.9988,
+        599.9988
+      ],
+      "effective_dpi_at_display_width": 600.0540820087798,
+      "vector_path_count": 49,
+      "pdf_image_objects": 0,
+      "minimum_text_points_at_display_width": 4.930576230810175,
+      "pdf_sha256": "08f2afb42828c71be92d09abca8bccc65e7a6036fd75e947b7a7b3a3b95c4b89",
+      "png_sha256": "d7552da41a3e06230e4c752d6ce0c0be9d4af551b9608a4d9972eee965e93979"
+    },
+    {
+      "figure": "2",
+      "document": "main",
+      "display_width_inches": 6.9893700013837,
+      "include_options": "width=\\textwidth",
+      "source": "results\\fig_efficiency.pdf",
+      "file_stem": "fig_efficiency",
+      "native_pdf_width_inches": 6.98937013414171,
+      "pixels": [
+        4194,
+        1330
+      ],
+      "png_dpi_metadata": [
+        599.9988,
+        599.9988
+      ],
+      "effective_dpi_at_display_width": 600.0540820087798,
+      "vector_path_count": 609,
+      "pdf_image_objects": 0,
+      "minimum_text_points_at_display_width": 4.8123392144707955,
+      "pdf_sha256": "22e589638ffe7e71e1766d50c7c34ae4973fffbaa8ce595f40ed8c423effd6d2",
+      "png_sha256": "deb38f293dd706903de0be5a32aef114423695987abc5102ace664f91ddb3c65"
+    },
+    {
+      "figure": "3",
+      "document": "main",
+      "display_width_inches": 6.9893700013837,
+      "include_options": "width=\\textwidth",
+      "source": "results\\fig_ibam_map.pdf",
+      "file_stem": "fig_ibam_map",
+      "native_pdf_width_inches": 6.98937013414171,
+      "pixels": [
+        4194,
+        1785
+      ],
+      "png_dpi_metadata": [
+        599.9988,
+        599.9988
+      ],
+      "effective_dpi_at_display_width": 600.0540820087798,
+      "vector_path_count": 200,
+      "pdf_image_objects": 2,
+      "minimum_text_points_at_display_width": 4.649508864780436,
+      "pdf_sha256": "89b2d679a970e5783dbcd95eb07dcc304bc2528db28e2142e6c6a1dd6090519f",
+      "png_sha256": "4a97deb76154a54a28207c7aad344f98f0833cf841d90b5feea647aecafc9951"
+    },
+    {
+      "figure": "4",
+      "document": "main",
+      "display_width_inches": 3.35787394492874,
+      "include_options": "width=\\columnwidth",
+      "source": "results\\fig_localization_forest.pdf",
+      "file_stem": "fig_localization_forest",
+      "native_pdf_width_inches": 3.3578739166259766,
+      "pixels": [
+        2015,
+        1744
+      ],
+      "png_dpi_metadata": [
+        599.9988,
+        599.9988
+      ],
+      "effective_dpi_at_display_width": 600.0820855836987,
+      "vector_path_count": 47,
+      "pdf_image_objects": 0,
+      "minimum_text_points_at_display_width": 5.31866984081986,
+      "pdf_sha256": "5d47e43d682e2f1bc9ea594ad7fc062f85e47298fb7ab44534a3f31e6ce787a1",
+      "png_sha256": "45932d77ab6b660d849ecfd0859b098d95ba6c75f0413dda009fdef2af8beaa1"
+    },
+    {
+      "figure": "5",
+      "document": "main",
+      "display_width_inches": 6.9893700013837,
+      "include_options": "width=\\textwidth",
+      "source": "results\\fig_interaction_content.pdf",
+      "file_stem": "fig_interaction_content",
+      "native_pdf_width_inches": 6.98937013414171,
+      "pixels": [
+        4194,
+        1507
+      ],
+      "png_dpi_metadata": [
+        599.9988,
+        599.9988
+      ],
+      "effective_dpi_at_display_width": 600.0540820087798,
+      "vector_path_count": 157,
+      "pdf_image_objects": 0,
+      "minimum_text_points_at_display_width": 6.384039757585014,
+      "pdf_sha256": "7192abfabaa492592299f9213c96c83c3c22156ecb16bd0c6482d4dcd874a918",
+      "png_sha256": "3e910934fb81af82cc339f91842c281a4f20ce3c489b3669bd2735ea79f5f7c6"
+    },
+    {
+      "figure": "6",
+      "document": "main",
+      "display_width_inches": 6.9893700013837,
+      "include_options": "width=\\textwidth",
+      "source": "results\\fig_docking.pdf",
+      "file_stem": "fig_docking",
+      "native_pdf_width_inches": 6.98937013414171,
+      "pixels": [
+        4194,
+        1391
+      ],
+      "png_dpi_metadata": [
+        599.9988,
+        599.9988
+      ],
+      "effective_dpi_at_display_width": 600.0540820087798,
+      "vector_path_count": 93,
+      "pdf_image_objects": 0,
+      "minimum_text_points_at_display_width": 6.393074867887031,
+      "pdf_sha256": "21d604e6f081f644c45d7b201b5bb8a365a5053324b86c493564585440ce8c3f",
+      "png_sha256": "548145a49d547e0bfbb558cc1628fdd114a5e73c50709ea6f5e5a3d7bf63de65"
+    },
+    {
+      "figure": "7",
+      "document": "main",
+      "display_width_inches": 6.9893700013837,
+      "include_options": "width=\\textwidth",
+      "source": "results\\fig_generation.pdf",
+      "file_stem": "fig_generation",
+      "native_pdf_width_inches": 6.98937013414171,
+      "pixels": [
+        4194,
+        1156
+      ],
+      "png_dpi_metadata": [
+        599.9988,
+        599.9988
+      ],
+      "effective_dpi_at_display_width": 600.0540820087798,
+      "vector_path_count": 562,
+      "pdf_image_objects": 0,
+      "minimum_text_points_at_display_width": 6.721819749948424,
+      "pdf_sha256": "c80255127f1785489e010cfaa48571d315b92efc38e296cc375ebb20c58326fb",
+      "png_sha256": "151c609eeaec24d0b25fefd1ccd80d27198bcf87b9f23eee86acc6feb90b37c7"
+    },
+    {
+      "figure": "8",
+      "document": "main",
+      "display_width_inches": 6.9893700013837,
+      "include_options": "width=\\textwidth",
+      "source": "results\\fig_top_analogs.pdf",
+      "file_stem": "fig_top_analogs",
+      "native_pdf_width_inches": 6.98937013414171,
+      "pixels": [
+        4194,
+        4318
+      ],
+      "png_dpi_metadata": [
+        599.9988,
+        599.9988
+      ],
+      "effective_dpi_at_display_width": 600.0540820087798,
+      "vector_path_count": 411,
+      "pdf_image_objects": 0,
+      "minimum_text_points_at_display_width": 7.499999857542946,
+      "pdf_sha256": "1ce9fe434a45e6313dc3b81083aa7c1c81aae51e79dcb2610bce304e62d7ad01",
+      "png_sha256": "1cceca9be3d79a1b4058d4e6d88da444dc23f9344edde4c1177e6d7ded2cc861"
+    },
+    {
+      "figure": "9",
+      "document": "main",
+      "display_width_inches": 6.9893700013837,
+      "include_options": "width=\\textwidth",
+      "source": "results\\fig_benchmark_validity.pdf",
+      "file_stem": "fig_benchmark_validity",
+      "native_pdf_width_inches": 6.98937013414171,
+      "pixels": [
+        4194,
+        1642
+      ],
+      "png_dpi_metadata": [
+        599.9988,
+        599.9988
+      ],
+      "effective_dpi_at_display_width": 600.0540820087798,
+      "vector_path_count": 184,
+      "pdf_image_objects": 0,
+      "minimum_text_points_at_display_width": 4.8123392144707955,
+      "pdf_sha256": "79eacf448d7fbed6bb0d1dc3fcc60611471a4a0a57375a095200fc9416eb0792",
+      "png_sha256": "732d84928ca94e0a2338d084440b7a2aeb3fbb09195248c130d413cd01e4d6e9"
+    },
+    {
+      "figure": "S1",
+      "document": "supplementary",
+      "display_width_inches": 6.370000271205203,
+      "include_options": "width=0.98\\linewidth",
+      "source": "results\\fig_residual_diagnostics.pdf",
+      "file_stem": "fig_residual_diagnostics",
+      "native_pdf_width_inches": 6.3700002034505205,
+      "pixels": [
+        3823,
+        1502
+      ],
+      "png_dpi_metadata": [
+        599.9988,
+        599.9988
+      ],
+      "effective_dpi_at_display_width": 600.1569603193578,
+      "vector_path_count": 1204,
+      "pdf_image_objects": 1,
+      "minimum_text_points_at_display_width": 6.7943201787743215,
+      "pdf_sha256": "2892f7d71a97c9a2c9f90da52f76e9e459579b6088419dd98e5d013a5cf21b7b",
+      "png_sha256": "20d9ad779100a5c177a298b7b264577995f6068011f33540b854e729059bf346"
+    },
+    {
+      "figure": "S2",
+      "document": "supplementary",
+      "display_width_inches": 6.370000271205203,
+      "include_options": "width=0.98\\linewidth",
+      "source": "results\\fig_ablation_scaffold_summary.pdf",
+      "file_stem": "fig_ablation_scaffold_summary",
+      "native_pdf_width_inches": 6.3700002034505205,
+      "pixels": [
+        3823,
+        1328
+      ],
+      "png_dpi_metadata": [
+        599.9988,
+        599.9988
+      ],
+      "effective_dpi_at_display_width": 600.1569603193578,
+      "vector_path_count": 28,
+      "pdf_image_objects": 0,
+      "minimum_text_points_at_display_width": 7.014700010525136,
+      "pdf_sha256": "ebea6f8222ad8eb81b3a4204d68bc8789ea2ad4ba742d3a155dc68c22d5b1102",
+      "png_sha256": "51617978866bbe9042409411d0fd75fbc187ddda535cd281ab8309f85a07a4ed"
+    }
+  ],
+  "source_packaging": {
+    "archives": {
+      "ieee_submission_source.zip": {
+        "sha256": "bf587714b20f5639bed51daec608b724f2605ee176ea7df268d2a518c750c4c2",
+        "files": [
+          "IEEEtran.bst",
+          "IEEEtran.cls",
+          "README.md",
+          "TEMPLATE_SOURCE.md",
+          "bullet.png",
+          "combined.tex",
+          "figures/fig_ablation_scaffold_summary.pdf",
+          "figures/fig_architecture.pdf",
+          "figures/fig_benchmark_validity.pdf",
+          "figures/fig_docking.pdf",
+          "figures/fig_efficiency.pdf",
+          "figures/fig_generation.pdf",
+          "figures/fig_ibam_map.pdf",
+          "figures/fig_interaction_content.pdf",
+          "figures/fig_localization_forest.pdf",
+          "figures/fig_residual_diagnostics.pdf",
+          "figures/fig_top_analogs.pdf",
+          "ieeeaccess.cls",
+          "logo.png",
+          "main.tex",
+          "notaglinelogo.png",
+          "references.bib",
+          "spotcolor.sty",
+          "supplementary.tex",
+          "t1-formata-bold.pfb",
+          "t1-formata-bold.tfm",
+          "t1-formata-bolditalic.tfm",
+          "t1-formata-condmedium.pfb",
+          "t1-formata-condmedium.tfm",
+          "t1-formata-medium.pfb",
+          "t1-formata-medium.tfm",
+          "t1-formata-mediumitalic.pfb",
+          "t1-formata-mediumitalic.tfm",
+          "t1-formata-regsymb.tfm",
+          "t1-formata-regular.pfb",
+          "t1-formata-regular.tfm",
+          "t1-formata.map",
+          "t1-giovannistd.map",
+          "t1-times-bold.pfb",
+          "t1-times-bold.tfm",
+          "t1-times-italic.pfb",
+          "t1-times-italic.tfm",
+          "t1-times.map",
+          "t1-times.pfb",
+          "t1-times.tfm",
+          "t1times.fd",
+          "table_generated_audit.tex",
+          "table_generated_top10.tex",
+          "table_literature_audit.tex",
+          "table_power.tex",
+          "table_s_egfr_retrieval_metrics_full.tex",
+          "table_s_interpretability_per_complex.tex",
+          "table_s_standard_eval_bootstrap.tex",
+          "table_s_top_egfr_retrieval_hits.tex",
+          "tables/docking_revalidated/table_docking_retrieval.tex",
+          "tables/table_benchmark_metrics_expanded.tex",
+          "template_assets.json"
+        ],
+        "bytes": 2273749
+      },
+      "ieee_submission_source_repo_layout.zip": {
+        "sha256": "5839cb873afe968c16894dd027522d625fbe13d84bf99cf9575555fe75bdf8f3",
+        "files": [
+          "IEEE_Access_Submission/IEEEtran.bst",
+          "IEEE_Access_Submission/IEEEtran.cls",
+          "IEEE_Access_Submission/TEMPLATE_SOURCE.md",
+          "IEEE_Access_Submission/bullet.png",
+          "IEEE_Access_Submission/combined.tex",
+          "IEEE_Access_Submission/ieeeaccess.cls",
+          "IEEE_Access_Submission/logo.png",
+          "IEEE_Access_Submission/main.tex",
+          "IEEE_Access_Submission/notaglinelogo.png",
+          "IEEE_Access_Submission/references.bib",
+          "IEEE_Access_Submission/spotcolor.sty",
+          "IEEE_Access_Submission/supplementary.tex",
+          "IEEE_Access_Submission/t1-formata-bold.pfb",
+          "IEEE_Access_Submission/t1-formata-bold.tfm",
+          "IEEE_Access_Submission/t1-formata-bolditalic.tfm",
+          "IEEE_Access_Submission/t1-formata-condmedium.pfb",
+          "IEEE_Access_Submission/t1-formata-condmedium.tfm",
+          "IEEE_Access_Submission/t1-formata-medium.pfb",
+          "IEEE_Access_Submission/t1-formata-medium.tfm",
+          "IEEE_Access_Submission/t1-formata-mediumitalic.pfb",
+          "IEEE_Access_Submission/t1-formata-mediumitalic.tfm",
+          "IEEE_Access_Submission/t1-formata-regsymb.tfm",
+          "IEEE_Access_Submission/t1-formata-regular.pfb",
+          "IEEE_Access_Submission/t1-formata-regular.tfm",
+          "IEEE_Access_Submission/t1-formata.map",
+          "IEEE_Access_Submission/t1-giovannistd.map",
+          "IEEE_Access_Submission/t1-times-bold.pfb",
+          "IEEE_Access_Submission/t1-times-bold.tfm",
+          "IEEE_Access_Submission/t1-times-italic.pfb",
+          "IEEE_Access_Submission/t1-times-italic.tfm",
+          "IEEE_Access_Submission/t1-times.map",
+          "IEEE_Access_Submission/t1-times.pfb",
+          "IEEE_Access_Submission/t1-times.tfm",
+          "IEEE_Access_Submission/t1times.fd",
+          "IEEE_Access_Submission/table_generated_audit.tex",
+          "IEEE_Access_Submission/table_generated_top10.tex",
+          "IEEE_Access_Submission/table_literature_audit.tex",
+          "IEEE_Access_Submission/table_power.tex",
+          "IEEE_Access_Submission/table_s_egfr_retrieval_metrics_full.tex",
+          "IEEE_Access_Submission/table_s_interpretability_per_complex.tex",
+          "IEEE_Access_Submission/table_s_standard_eval_bootstrap.tex",
+          "IEEE_Access_Submission/table_s_top_egfr_retrieval_hits.tex",
+          "IEEE_Access_Submission/template_assets.json",
+          "README_REBUILD.md",
+          "results/docking_revalidated/table_docking_retrieval.tex",
+          "results/fig_ablation_scaffold_summary.pdf",
+          "results/fig_architecture.pdf",
+          "results/fig_benchmark_validity.pdf",
+          "results/fig_docking.pdf",
+          "results/fig_efficiency.pdf",
+          "results/fig_generation.pdf",
+          "results/fig_ibam_map.pdf",
+          "results/fig_interaction_content.pdf",
+          "results/fig_localization_forest.pdf",
+          "results/fig_residual_diagnostics.pdf",
+          "results/fig_top_analogs.pdf",
+          "results/table_benchmark_metrics_expanded.tex"
+        ],
+        "bytes": 2275750
+      }
+    },
+    "self_contained_rebuild": {
+      "performed": true,
+      "documents": {
+        "main": {
+          "pages": 15,
+          "identical_extracted_text": true
+        },
+        "supplementary": {
+          "pages": 12,
+          "identical_extracted_text": true
+        },
+        "combined": {
+          "pages": 27,
+          "identical_extracted_text": true
+        }
+      }
+    },
+    "source_dependencies": [
+      {
+        "path": "IEEE_Access_Submission\\bullet.png",
+        "sha256": "754772e36aab389556f98c14f5deeb4031e792b68a766dc5f9766e76e114fffc"
+      },
+      {
+        "path": "IEEE_Access_Submission\\combined.tex",
+        "sha256": "277bcd9504099044d4054ca81f0119a2ecc6efd30ba3814955f930f4ec973487"
+      },
+      {
+        "path": "IEEE_Access_Submission\\ieeeaccess.cls",
+        "sha256": "67b73c4da05479d592a9449c38a81fcc7779d78753085bb44199e7f2746b757d"
+      },
+      {
+        "path": "IEEE_Access_Submission\\IEEEtran.bst",
+        "sha256": "314f0ece704568faf827011bac498650691b2b5ee06320720830e782416d5a5f"
+      },
+      {
+        "path": "IEEE_Access_Submission\\IEEEtran.cls",
+        "sha256": "da751920a317ed318b7b5cd7fa585a6cc7d28502d457856382e9be24b10a3bd7"
+      },
+      {
+        "path": "IEEE_Access_Submission\\logo.png",
+        "sha256": "7e04ba7f0c579f3765941680e2a19437e15a81b84a138d73c54bd4afead752cd"
+      },
+      {
+        "path": "IEEE_Access_Submission\\main.tex",
+        "sha256": "95c6fff6d4b62d08f811829ea1363a3525a1808011a0e6a8ea04602bede29243"
+      },
+      {
+        "path": "IEEE_Access_Submission\\notaglinelogo.png",
+        "sha256": "955e9a07fb35ffbc8a41597b8c6e7ec4cedf6a8652f5c73a33957044aae64900"
+      },
+      {
+        "path": "IEEE_Access_Submission\\references.bib",
+        "sha256": "25f4a42e80aa538ea114b5c8a92056d3051b2b685506518e563a6da3da29a6be"
+      },
+      {
+        "path": "IEEE_Access_Submission\\spotcolor.sty",
+        "sha256": "a9c5bacbf5b832e5eac61393bf1b330fc75fa353cbc9cf4319c227de49bfa5fa"
+      },
+      {
+        "path": "IEEE_Access_Submission\\supplementary.tex",
+        "sha256": "731c4d78f3b154c3d838296560c6e499730f46b8ffa5bc19a808bcf361663fe0"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-formata-bold.pfb",
+        "sha256": "85cc7db8dc04090411600cfb2853bb2efe92a8dc3c406e57ba11fd21248e607b"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-formata-bold.tfm",
+        "sha256": "07d3efeaf10af3eb2c15cc00ef16629cee96df315d0551984fce5b7f67cf8ee3"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-formata-bolditalic.tfm",
+        "sha256": "edba8f3a19f9ccc6c3fc2b99aabb108d88ca16188cc110c34dba01716553f005"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-formata-condmedium.pfb",
+        "sha256": "21d1c9853f4c1d1975c13541629e9977380dd61cb461de130dd22f181f60c749"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-formata-condmedium.tfm",
+        "sha256": "6b50cfdac0503850bd1042e6f81a5bc7106732b71a6e7382083290e8d28ae3d4"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-formata-medium.pfb",
+        "sha256": "86bcb9f9047a23d192e46b85af6ac50a3f557dd81bcb57bb77fe10fbd2c4f7a7"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-formata-medium.tfm",
+        "sha256": "06bbc55cb560d7f16e3821f739756db3dcced3543542cfca79790cdaf7918b9d"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-formata-mediumitalic.pfb",
+        "sha256": "81675003831e33e5e4f708d6d3ee6db81c0ec0da241a083e9457cc83fdd73df4"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-formata-mediumitalic.tfm",
+        "sha256": "6af7b2d27109a2aeb09a6775974d67b0c78f4acdbc23e072138e0b69f39cb53d"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-formata-regsymb.tfm",
+        "sha256": "2099220084353dd2414b1e47156b6b4745cfa94d8cf7a737c519f8e47d8d9cc2"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-formata-regular.pfb",
+        "sha256": "ddda54f35e3b59effa5bc0782bfc75b971d4503e3d643888e12ef8cf0a5c259c"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-formata-regular.tfm",
+        "sha256": "5b72c4ed7ea54027bfd6206b35898e3d531372f9810b4a1d35325fa4a9bed95f"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-formata.map",
+        "sha256": "6bc40400c9d3e827bc8c9243699e5681fe2fd385aa58f1c010c0bb62db8ac7b4"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-giovannistd.map",
+        "sha256": "3b53bc7de8bce199c2b5cb5a7e0b0dd4625a8f15f3ab50ba6b550fc497b0ba37"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-times-bold.pfb",
+        "sha256": "9de3b06aee8a29697b10861f1d4f4fff11568f5629ed2d03bfa82ff0d244c682"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-times-bold.tfm",
+        "sha256": "4c845739e4c4b74bd3314d191781ed5bfad3005e568376186ff3be72e4007a2b"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-times-italic.pfb",
+        "sha256": "8b291a54d50d0064621726d947d013743c097ddb6e0dca7704fedec65f6adda5"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-times-italic.tfm",
+        "sha256": "1a7a52a19b83939973e9a46a1615ca5b01b826670b77631c9e97313e325a6aa0"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-times.map",
+        "sha256": "34315863a8b07b692262ef6489a0cd2fab0e1c7ee2979379a3ab488dde62a1a9"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-times.pfb",
+        "sha256": "d7a1e71f532e430ecb31b0f70fdc3c13e6d952371899649ba70821ddc2aee3e8"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1-times.tfm",
+        "sha256": "5c8fb592c16a481b6594dc5edfa62ef24db5d233a1e57f36f502e2d0f79c1a20"
+      },
+      {
+        "path": "IEEE_Access_Submission\\t1times.fd",
+        "sha256": "257f290ea4e57bd9bcbaf22bdfeb1b17ada22d92e4b543d56625044302708e3b"
+      },
+      {
+        "path": "IEEE_Access_Submission\\table_generated_audit.tex",
+        "sha256": "504f6a4cbc3ab8a94faa7db2a015a94b917c209191ffc1fb9ce3039969a83127"
+      },
+      {
+        "path": "IEEE_Access_Submission\\table_generated_top10.tex",
+        "sha256": "f53a03340562304a93e87aae3fb9501956134f32411ace554e497d5679495ea0"
+      },
+      {
+        "path": "IEEE_Access_Submission\\table_literature_audit.tex",
+        "sha256": "f0632ced07befee287b3a32d1b911a7b21b38596d93a935d69bb31146091e353"
+      },
+      {
+        "path": "IEEE_Access_Submission\\table_power.tex",
+        "sha256": "631aa73a12d7f6fbd458806f5e4a45bf3d489e52ca884923770943eddf760928"
+      },
+      {
+        "path": "IEEE_Access_Submission\\table_s_egfr_retrieval_metrics_full.tex",
+        "sha256": "63fe304b20b6817b0d79f5069b8c2a85159bd4e2ecfea638037f9901a2c4717d"
+      },
+      {
+        "path": "IEEE_Access_Submission\\table_s_interpretability_per_complex.tex",
+        "sha256": "50bd61137ade6f27dd5cad44e92f42ca637d411db0b75cc1f2d948c8c20f2cec"
+      },
+      {
+        "path": "IEEE_Access_Submission\\table_s_standard_eval_bootstrap.tex",
+        "sha256": "86c49ecb5ba5b188763fba2514c31cf7f8d6176853ff2e30e81c839f5a82b9a2"
+      },
+      {
+        "path": "IEEE_Access_Submission\\table_s_top_egfr_retrieval_hits.tex",
+        "sha256": "9e1805814363e425d48d3c5a112337ba94d38b45a93cec7ecefe42459d6070d9"
+      },
+      {
+        "path": "IEEE_Access_Submission\\template_assets.json",
+        "sha256": "a843bc0056c2635b5faa1d830f87ad151573b0f7a32dc8b97fb7cd8e49d28093"
+      },
+      {
+        "path": "IEEE_Access_Submission\\TEMPLATE_SOURCE.md",
+        "sha256": "35b24d3fd48028ba0048fe53e9dcac6d935b4f1cf28a3f4d95b398502ff2b94c"
+      },
+      {
+        "path": "results\\docking_revalidated\\table_docking_retrieval.tex",
+        "sha256": "c8e04cf89ba9d25e514b18454d78a3a9338802399109bb563f4a7560d2682ed9"
+      },
+      {
+        "path": "results\\fig_ablation_scaffold_summary.pdf",
+        "sha256": "ebea6f8222ad8eb81b3a4204d68bc8789ea2ad4ba742d3a155dc68c22d5b1102"
+      },
+      {
+        "path": "results\\fig_architecture.pdf",
+        "sha256": "08f2afb42828c71be92d09abca8bccc65e7a6036fd75e947b7a7b3a3b95c4b89"
+      },
+      {
+        "path": "results\\fig_benchmark_validity.pdf",
+        "sha256": "79eacf448d7fbed6bb0d1dc3fcc60611471a4a0a57375a095200fc9416eb0792"
+      },
+      {
+        "path": "results\\fig_docking.pdf",
+        "sha256": "21d604e6f081f644c45d7b201b5bb8a365a5053324b86c493564585440ce8c3f"
+      },
+      {
+        "path": "results\\fig_efficiency.pdf",
+        "sha256": "22e589638ffe7e71e1766d50c7c34ae4973fffbaa8ce595f40ed8c423effd6d2"
+      },
+      {
+        "path": "results\\fig_generation.pdf",
+        "sha256": "c80255127f1785489e010cfaa48571d315b92efc38e296cc375ebb20c58326fb"
+      },
+      {
+        "path": "results\\fig_ibam_map.pdf",
+        "sha256": "89b2d679a970e5783dbcd95eb07dcc304bc2528db28e2142e6c6a1dd6090519f"
+      },
+      {
+        "path": "results\\fig_interaction_content.pdf",
+        "sha256": "7192abfabaa492592299f9213c96c83c3c22156ecb16bd0c6482d4dcd874a918"
+      },
+      {
+        "path": "results\\fig_localization_forest.pdf",
+        "sha256": "5d47e43d682e2f1bc9ea594ad7fc062f85e47298fb7ab44534a3f31e6ce787a1"
+      },
+      {
+        "path": "results\\fig_residual_diagnostics.pdf",
+        "sha256": "2892f7d71a97c9a2c9f90da52f76e9e459579b6088419dd98e5d013a5cf21b7b"
+      },
+      {
+        "path": "results\\fig_top_analogs.pdf",
+        "sha256": "1ce9fe434a45e6313dc3b81083aa7c1c81aae51e79dcb2610bce304e62d7ad01"
+      },
+      {
+        "path": "results\\table_benchmark_metrics_expanded.tex",
+        "sha256": "4b249c1499570da1ec21774eab38eec90828def1668c787516361d3440b2f53a"
+      }
+    ]
+  },
+  "all_automated_checks_passed": true,
+  "figures_zip_sha256": "0f886b78e583522befa4c4e5e93700fa4ce7c35121de1c7ba0de82012e32442c",
+  "reference_validation": {
+    "pytest_passed": 8,
+    "local_audited_checkpoint_forward_pass": true,
+    "staged_code_random_demo_passed": true,
+    "staged_code_missing_trained_assets_failed_explicitly": true,
+    "assets_in_staged_code": false
+  },
+  "release_checks": {
+    "title_and_author_metadata_match": true,
+    "all_source_dependencies_match_staged_blobs": true
+  }
+}

@@ -10,7 +10,7 @@ Figures produced (those whose inputs exist are built; the rest are skipped with
 a message, so this script is safe to run at any point during the analysis):
 
   fig_localization_forest    per-complex residue contact AUROC with analytic
-                             intervals, stratified by inhibitor binding mode
+                             intervals
   fig_benchmark_validity     the two constructions that cannot measure:
                              atom-level contact saturation, and the disjoint
                              class supports of the similarity-defined panel
@@ -45,6 +45,9 @@ RESULTS = ROOT / "results"
 
 Z = 1.959964
 
+# Correct confirmed display metadata without modifying archived result files.
+DISPLAY_PROTEIN = {"4RJ3": "CDK2"}
+
 
 def hanley_mcneil_se(auroc: float, n_pos: int, n_neg: int) -> float:
     """Analytic standard error of an AUROC (Hanley and McNeil, 1982)."""
@@ -66,8 +69,6 @@ def fig_localization_forest() -> None:
         return _skip("fig_localization_forest", f"missing {src.name}")
     df = pd.read_csv(src)
 
-    mode = {"2HYY": "II", "4RJ3": "II", "6YOJ": "I", "4WKQ": "I", "1KE6": "I"}
-    df["mode"] = df["pdb_id"].map(mode)
     df["se"] = [hanley_mcneil_se(r.residue_contact_auroc,
                                  int(r.n_contact_residues),
                                  int(r.n_residues) - int(r.n_contact_residues))
@@ -90,8 +91,8 @@ def fig_localization_forest() -> None:
 
     fig, ax = figure(width="single", height=2.9)
     for i, r in df.iterrows():
-        col = COLORS["secondary"] if r["mode"] == "II" else COLORS["primary"]
-        mk = MARKERS[1] if r["mode"] == "II" else MARKERS[0]
+        col = COLORS["primary"]
+        mk = MARKERS[0]
         lo, hi = r.residue_contact_auroc - Z * r.se, r.residue_contact_auroc + Z * r.se
         ax.plot([lo, hi], [i, i], color=col, lw=1.1, solid_capstyle="round")
         ax.plot([r.residue_contact_auroc], [i], mk, color=col,
@@ -99,7 +100,8 @@ def fig_localization_forest() -> None:
         if lo > 0.5:
             ax.text(hi + 0.012, i, "*", va="center", fontsize=9, color=col)
 
-    labels = [f"{r.protein} ({r.pdb_id})" for r in df.itertuples()]
+    labels = [f"{DISPLAY_PROTEIN.get(r.pdb_id, r.protein)} ({r.pdb_id})"
+              for r in df.itertuples()]
     y = len(df)
     for est, se, lab in ((fixed, se_fixed, "Fixed effect"),
                          (rand, se_rand, "Random effects")):
@@ -121,12 +123,10 @@ def fig_localization_forest() -> None:
     from matplotlib.lines import Line2D
     ax.legend(handles=[
         Line2D([], [], color=COLORS["primary"], marker=MARKERS[0], ls="-",
-               markersize=4, label="Type I (ATP-competitive)"),
-        Line2D([], [], color=COLORS["secondary"], marker=MARKERS[1], ls="-",
-               markersize=4, label="Type II (DFG-out)"),
+               markersize=4, label="Complex"),
         Line2D([], [], color=COLORS["dark"], marker="D", ls="none",
                markersize=4, label="Pooled"),
-    ], loc="upper center", bbox_to_anchor=(0.5, -0.20), ncol=3, fontsize=6.5)
+    ], loc="upper center", bbox_to_anchor=(0.5, -0.20), ncol=2, fontsize=6.5)
     ax.set_title(f"$I^2$ = {i2:.0%}, $Q$ = {q:.1f} on {k-1} df", fontsize=7.5)
 
     small = check_min_font(fig)
@@ -167,7 +167,8 @@ def fig_benchmark_validity() -> None:
                 f"{r['residue_base_rate']:.3f}", va="center", ha="left",
                 fontsize=6.5, color=COLORS["dark"])
     ax.set_yticks(ypos)
-    ax.set_yticklabels([f"{r.protein} ({r.pdb_id})" for r in order.itertuples()],
+    ax.set_yticklabels([f"{DISPLAY_PROTEIN.get(r.pdb_id, r.protein)} ({r.pdb_id})"
+                       for r in order.itertuples()],
                        fontsize=6.5)
     ax.invert_yaxis()
     ax.set_xlabel("Fraction of tokens in contact (base rate)")
@@ -242,7 +243,7 @@ def fig_efficiency() -> None:
             continue
         ax.plot(sub["batch_size"], sub["pairs_per_second"],
                 marker=MARKERS[i], color=[COLORS["primary"], COLORS["secondary"]][i],
-                label="With interaction maps" if collect else "Affinity only")
+                label="Scores and maps" if collect else "Scores only")
     ax.set_xscale("log", base=2)
     ax.set_xlabel("Pairs per batch")
     ax.set_ylabel("Pairs per second (CPU)")
@@ -281,6 +282,10 @@ def fig_interaction_content() -> None:
     if not src.exists():
         return _skip("fig_interaction_content", f"missing {src.name}")
     res = json.loads(src.read_text())
+    validated = RESULTS / "contact_information_revalidated.json"
+    if not validated.exists():
+        return _skip("fig_interaction_content", "run revalidate_contact_probes.py first")
+    res["classification"] = json.loads(validated.read_text())["classification"]
     st = pd.read_csv(stats) if stats.exists() else None
 
     fig, axes = matplotlib.pyplot.subplots(
@@ -297,7 +302,7 @@ def fig_interaction_content() -> None:
     ax.set_xticks(np.arange(3))
     ax.set_xticklabels([n for n, _ in parts], fontsize=6.5)
     ax.set_ylabel("Share of attention variance (%)")
-    ax.set_title("Where the map's variation lives", fontsize=7.5)
+    ax.set_title("Attention variance components", fontsize=7.5)
     for i, (_, p) in enumerate(parts):
         ax.text(i, 100 * p, f"{100*p:.1f}", ha="center", va="bottom", fontsize=6.5)
 
@@ -312,7 +317,7 @@ def fig_interaction_content() -> None:
         ax.set_xlabel("Correlation with the panel mean profile")
         ax.set_ylabel("Density")
         ax.legend(fontsize=6.5, loc="upper left")
-        ax.set_title("Every ligand gets nearly the same map", fontsize=7.5)
+        ax.set_title("Similarity of residue profiles", fontsize=7.5)
 
     # (c) what can be recovered from the map
     ax = axes[2]
@@ -324,7 +329,7 @@ def fig_interaction_content() -> None:
     # only channel.
     bars = [
         ("Attention profile", cl["auroc_from_attention_profile"], COLORS["secondary"]),
-        ("Profile, size removed",
+        ("Profile, descriptor-adjusted",
          cl.get("auroc_from_profile_residualized_on_descriptors",
                 cl.get("auroc_from_profile_residualised_on_descriptors", np.nan)),
          COLORS["secondary"]),
@@ -349,7 +354,7 @@ def fig_interaction_content() -> None:
     ax.set_xlabel("Active vs decoy AUROC")
     ax.set_xlim(0, 1.08)
     ax.grid(axis="y", visible=False)
-    ax.set_title("Recovering binder status", fontsize=7.5)
+    ax.set_title("Active-decoy discrimination", fontsize=7.5)
 
     panel_labels(axes, x=-0.22)
     print("  wrote", save(fig, "fig_interaction_content")[0].name)
@@ -357,7 +362,7 @@ def fig_interaction_content() -> None:
 
 # ---------------------------------------------------------------------------
 def fig_docking() -> None:
-    src = RESULTS / "docking_retrieval_summary.json"
+    src = RESULTS / "docking_revalidated" / "docking_retrieval_summary.json"
     scores = RESULTS / "docking" / "vina_scores.csv"
     if not src.exists():
         return _skip("fig_docking", f"missing {src.name}")
@@ -369,7 +374,7 @@ def fig_docking() -> None:
     # (a) ROC curves
     ax = axes[0]
     from sklearn.metrics import roc_curve
-    scored_csv = RESULTS / "docking_panel_scored.csv"
+    scored_csv = RESULTS / "docking_revalidated" / "docking_panel_scored.csv"
     if scored_csv.exists():
         m = pd.read_csv(scored_csv)
         n_act = int(m["label"].sum())
@@ -454,7 +459,7 @@ def fig_architecture() -> None:
 
     def arrow(a, b, side="v"):
         if side == "v":
-            xy = (a[0] + a[2] / 2, a[1]); xytext = (b[0] + b[2] / 2, b[1] + b[3])
+            xy = (a[0] + a[2] / 2, a[1] + a[3]); xytext = (b[0] + b[2] / 2, b[1])
         else:
             xy = (a[0], a[1] + a[3] / 2); xytext = (b[0] + b[2], b[1] + b[3] / 2)
         ax.add_patch(FancyArrowPatch(
@@ -464,7 +469,7 @@ def fig_architecture() -> None:
 
     # --- ligand branch (left) ---------------------------------------------
     l1 = box(2, 46, 22, 8,  "Ligand SMILES", "input", bold=True)
-    l2 = box(2, 34, 22, 8,  "RDKit atom-bond graph", "module")
+    l2 = box(2, 34, 22, 8,  "RDKit atom-bond graph", "state")
     l3 = box(2, 22, 22, 8,  "Graph attention encoder\n6 layers, 8 heads", "module")
     l4 = box(2, 11, 22, 7,  "Atom tokens", "state")
     for a, b in ((l2, l1), (l3, l2), (l4, l3)):
@@ -472,7 +477,7 @@ def fig_architecture() -> None:
 
     # --- protein branch (right) -------------------------------------------
     r1 = box(76, 46, 22, 8, "Protein sequence", "input", bold=True)
-    r2 = box(76, 34, 22, 8, "Cached ESM-C\nresidue embeddings", "module")
+    r2 = box(76, 34, 22, 8, "Cached ESM-C\nresidue embeddings", "state")
     r3 = box(76, 22, 22, 8, "Protein adapter", "module")
     r4 = box(76, 11, 22, 7, "Residue tokens", "state")
     for a, b in ((r2, r1), (r3, r2), (r4, r3)):
@@ -489,17 +494,33 @@ def fig_architecture() -> None:
         arrowstyle="-|>", mutation_scale=7, linewidth=0.8,
         color=COLORS["grey"], zorder=1, shrinkA=1.5, shrinkB=1.5))
 
-    shared = box(31, 11, 38, 7, "Shared state", "state", bold=True, fs=7.0)
+    shared = box(31, 11, 38, 7, "Fused state and attention maps", "state", bold=True, fs=7.0)
     arrow(shared, f)
 
-    # --- four heads from one state ----------------------------------------
+    # Generation shares the protein adapter, but bypasses cross-attention.
+    # Its fixed seed graph supplies adjacency and the atom mask.
+    generation = box(31, 40, 38, 10,
+                     "Analog generation (diffusion head)\n"
+                     "Pooled protein state + seed topology",
+                     "output", fs=6.6)
+    for start, end in (
+        ((l2[0] + l2[2], l2[1] + l2[3] / 2),
+         (generation[0], generation[1] + generation[3] / 2)),
+        ((r3[0], r3[1] + r3[3] / 2),
+         (generation[0] + generation[2], generation[1] + generation[3] / 2)),
+    ):
+        ax.add_patch(FancyArrowPatch(
+            start, end, arrowstyle="-|>", mutation_scale=7,
+            linewidth=0.8, color=COLORS["grey"], zorder=1,
+            shrinkA=1.5, shrinkB=1.5))
+
+    # --- three outputs from the fusion pathway ----------------------------
     outs = [
         (1.8,  "Affinity\nprediction"),
-        (26.2, "Interaction map\n(iBAM)"),
-        (50.6, "Latent\nretrieval"),
-        (75.0, "Analog generation\n(diffusion head)"),
+        (38.8, "Interaction map\n(iBAM)"),
+        (75.0, "Latent\nretrieval"),
     ]
-    # Routed as a bus rather than four diagonals: a diagonal drawn behind the
+    # Routed as a bus rather than three diagonals: a diagonal drawn behind the
     # rounded boxes leaves its arrowhead hidden under the border, which reads as
     # a stray stub above the outer boxes.
     PAD = 0.35          # the rounded boxstyle pad, so edges sit at y +/- PAD

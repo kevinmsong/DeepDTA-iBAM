@@ -1,0 +1,15 @@
+%% Combined submission bundle: main manuscript followed by Additional file 1.
+%% Build: pdflatex main; bibtex main; pdflatex main; pdflatex main
+%%        pdflatex supplementary; pdflatex supplementary
+%%        pdflatex combined
+\documentclass[11pt]{article}
+\usepackage[margin=0pt]{geometry}
+\usepackage{pdfpages}
+\usepackage{hyperref}
+\hypersetup{hidelinks,
+  pdftitle={DeepDTA-iBAM: Cross-Attention Interaction Mapping for Affinity Prediction, Ligand Retrieval, and Analog Generation (main and supplement)},
+  pdfauthor={Kevin Song, John Zhang, Lei Ye, and Jianyi Zhang}}
+\begin{document}
+\includepdf[pages=-]{main.pdf}
+\includepdf[pages=-]{supplementary.pdf}
+\end{document}

@@ -1,0 +1,101 @@
+{
+  "scope": "Aggregation of saved docking scores only; no docking or model inference.",
+  "input_and_archived_output_sha256_before": {
+    "results\\docking\\vina_scores.csv": "44bffac54c0365928e344e68dfe2671ed0295121e470d5ad5e445daadb1c2d21",
+    "results\\dude_egfr_panel_scored.csv": "edda97bc5746dc5016f4fdef096b4402a59ee9853edfffe46887d828af920cbb",
+    "results\\docking_retrieval_summary.json": "46efcdb58cb1aad7b903f5fc8a3edf8785ce32fa2ac223ca559435e9f0c52f13",
+    "results\\table_docking_retrieval.tex": "8430eb773fea30b4cbade25fdcebe3afbd597fa220655e9e54e9544e43c22467",
+    "results\\docking_panel_scored.csv": "b231f1e97a87cdf240395b85a47db54e114daa5b6ec855f783e22c65d20b4144"
+  },
+  "input_and_archived_output_sha256_after": {
+    "results\\docking\\vina_scores.csv": "44bffac54c0365928e344e68dfe2671ed0295121e470d5ad5e445daadb1c2d21",
+    "results\\dude_egfr_panel_scored.csv": "edda97bc5746dc5016f4fdef096b4402a59ee9853edfffe46887d828af920cbb",
+    "results\\docking_retrieval_summary.json": "46efcdb58cb1aad7b903f5fc8a3edf8785ce32fa2ac223ca559435e9f0c52f13",
+    "results\\table_docking_retrieval.tex": "8430eb773fea30b4cbade25fdcebe3afbd597fa220655e9e54e9544e43c22467",
+    "results\\docking_panel_scored.csv": "b231f1e97a87cdf240395b85a47db54e114daa5b6ec855f783e22c65d20b4144"
+  },
+  "source_script": "analysis\\analysis_docking_retrieval.py",
+  "source_script_sha256": "141c4f7b4e95e5540966d15150ca5aeb65d03cbaaf16f15dfbdbd21ae7a86168",
+  "audit_script_sha256": "4acde4be0ea0dc5e91b06fc5d59f98e6be827d700f76c7f52f5416e87711f768",
+  "versions": {
+    "python": "3.13.14",
+    "numpy": "2.4.1",
+    "pandas": "2.3.3",
+    "scikit_learn": "1.8.0",
+    "rdkit": "2025.09.3"
+  },
+  "tolerance": 1e-12,
+  "scientific_numeric_fields_compared": 50,
+  "all_scientific_metrics_and_intervals_match": false,
+  "all_auroc_average_precision_and_paired_intervals_match": true,
+  "rank_metric_changes_from_explicit_tie_averaging": [
+    {
+      "field": "metrics.vina.bedroc20",
+      "archived": 0.4630321623678126,
+      "revalidated": 0.46304492503991257,
+      "difference": 1.2762672099986272e-05,
+      "matches_within_tolerance": false
+    },
+    {
+      "field": "metrics.vina.recovery_10pct",
+      "archived": 0.12666666666666668,
+      "revalidated": 0.1288888888888889,
+      "difference": 0.0022222222222222088,
+      "matches_within_tolerance": false
+    },
+    {
+      "field": "metrics.ecfp_nearest_active.bedroc20",
+      "archived": 0.9999197102605886,
+      "revalidated": 0.9999198893052227,
+      "difference": 1.7904463411877458e-07,
+      "matches_within_tolerance": false
+    },
+    {
+      "field": "metrics.ecfp_full_panel_reference.bedroc20",
+      "archived": 0.9999197102605886,
+      "revalidated": 0.9999198893052227,
+      "difference": 1.7904463411877458e-07,
+      "matches_within_tolerance": false
+    }
+  ],
+  "rank_tie_handling": "Enrichment, recovery, and BEDROC average over all orderings within tied-score groups; AUROC and average precision use scikit-learn tie handling.",
+  "maximum_absolute_scientific_difference": 0.0022222222222222088,
+  "candidate_score_comparison": {
+    "ident": {
+      "equal_values_and_order": true
+    },
+    "smiles": {
+      "equal_values_and_order": true
+    },
+    "label": {
+      "equal_values_and_order": true
+    },
+    "vina": {
+      "max_absolute_difference": 0.0
+    },
+    "deepdta_ibam": {
+      "max_absolute_difference": 0.0
+    },
+    "ecfp_nearest_active": {
+      "max_absolute_difference": 0.0
+    },
+    "ecfp_full_panel_reference": {
+      "max_absolute_difference": 0.0
+    }
+  },
+  "panel_count_correction": {
+    "archived_n_failed": 2540,
+    "revalidated_n_failed": 0,
+    "n_attempted": 760,
+    "n_not_docked": 2540,
+    "n_never_attempted": 2540
+  },
+  "fingerprint_reference": "All 300 panel actives were docked, so within-subset and full-panel active reference sets coincide. The fingerprint ranker uses known active labels unavailable to the other rankers.",
+  "outputs": [
+    "docking_retrieval_summary.json",
+    "table_docking_retrieval.tex",
+    "docking_panel_scored.csv",
+    "scientific_metric_comparison.csv"
+  ],
+  "seconds": 50.899
+}

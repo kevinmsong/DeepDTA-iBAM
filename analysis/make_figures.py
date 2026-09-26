@@ -1,6 +1,10 @@
 """
 Publication figures for the J. Cheminform. submission.
 
+ARCHIVE NOTICE: this legacy forest plot uses unsupported binding-mode labels,
+including the withdrawn type II assignment for 4RJ3. Do not use it in current
+reports. Use analysis/make_figures_ieee.py for the corrected per-complex plot.
+
 Generates two figures that present the revision's two principal findings and
 that have no counterpart in the original pipeline output:
 
@@ -83,7 +87,7 @@ def _despine(ax, keep=("left", "bottom")):
 def forest_plot():
     rows = list(csv.DictReader(open(RES + "interpretability_benchmark.csv")))
     mode = {"2HYY": "II", "4RJ3": "II", "1KE6": "I", "4WKQ": "I", "6YOJ": "I"}
-    lig = {"1KE6": "LS2", "2HYY": "imatinib", "4RJ3": "3QS", "4WKQ": "erlotinib", "6YOJ": "P4N"}
+    lig = {"1KE6": "LS2", "2HYY": "imatinib", "4RJ3": "3QS", "4WKQ": "gefitinib", "6YOJ": "P4N"}
 
     per = []
     for x in rows:

@@ -1,0 +1,427 @@
+{
+  "selection": "Five highest saved PredAffinity values among the 60 nonseed diffusion analogs surviving the released four-motif audit. Ties would be resolved by canonical isomeric SMILES.",
+  "ranking_metric": "Saved EGFR model prediction in KIBA-score units; higher first",
+  "metric_join": "Unique exact raw SMILES and canonical isomeric SMILES matches across released, audited, comparison, and successful generated-analog docking rows",
+  "source_id": "The displayed analog_000 to analog_004 identifiers are the saved docking identifiers, not new molecule names.",
+  "seed_reconciliation": {
+    "displayed_same_pass_seed": 11.269414901733398,
+    "unused_separate_seed_reference": 11.272457122802734,
+    "explanation": "generation_comparison.csv scores all candidates, including the returned seed, in one pass. case_studies_results_generation.py then scores the seed separately for the summary. The figure uses only the candidate-pass scores for affinities and differences.",
+    "source_code": "case_studies_results_generation.py:2942-2964"
+  },
+  "stereochemistry": "All five analogs have two unspecified potential tetrahedral centers according to FindPotentialStereo, including dependent ring stereochemistry. No stereoisomers were assigned. Drawings preserve the source SMILES; unknown stereochemistry is shown with RDKit's unspecifiedStereoIsUnknown option.",
+  "audit_scope": "The four-motif audit does not imply Lipinski or PAINS/BRENK compliance. Those original saved flags are displayed separately.",
+  "docking_limit": "Vina values are saved docking scores for the archived 3D preparations. Source SMILES do not specify analog stereochemistry; these scores do not define or compare all possible stereoisomers.",
+  "fingerprint": {
+    "type": "Morgan/ECFP",
+    "radius": 2,
+    "bits": 2048,
+    "include_chirality": false,
+    "reference": "dasatinib seed"
+  },
+  "rdkit_version": "2024.09.6",
+  "recomputed_predictions": false,
+  "source_sha256": {
+    "results\\generated_egfr_analogs_audited.csv": "20adb13ab11f9e1dcbe5fe1b6842b841867351029c63bf0afd0810ef7df96d28",
+    "results\\generation_comparison.csv": "cc9de84f45d0fc3d7be3453aed967a0b9180ae5bbdbaa801827382da576ca480",
+    "results\\generated_egfr_analogs_100.csv": "e9aefb43f27dbc61476005cecc10aa3fca18bc44f91d9a26e56bf67e706866f1",
+    "results\\docking\\vina_scores.csv": "44bffac54c0365928e344e68dfe2671ed0295121e470d5ad5e445daadb1c2d21",
+    "results\\table_generation_comparison_summary.csv": "8091c50cee79c77bdec03fcec89aca6bcdf57eedb536477c4e261dc41933563e"
+  },
+  "original_sources_unchanged": true,
+  "independent_checks": [
+    {
+      "saved_id": "dasatinib_seed",
+      "descriptor_recomputation_errors": {
+        "QED": 0.0,
+        "SA": 0.0,
+        "tanimoto": 0.0
+      },
+      "potential_stereo": [],
+      "raw_smiles_match_all_sources": true
+    },
+    {
+      "saved_id": "analog_000",
+      "descriptor_recomputation_errors": {
+        "QED": 0.0,
+        "SA": 0.0,
+        "tanimoto": 0.0
+      },
+      "potential_stereo": [
+        {
+          "type": "Atom_Tetrahedral",
+          "specified": "Unspecified",
+          "atom_or_bond_index": 22,
+          "controlling_atoms": [
+            21,
+            23,
+            30
+          ]
+        },
+        {
+          "type": "Atom_Tetrahedral",
+          "specified": "Unspecified",
+          "atom_or_bond_index": 25,
+          "controlling_atoms": [
+            24,
+            26,
+            29
+          ]
+        }
+      ],
+      "raw_smiles_match_all_sources": true
+    },
+    {
+      "saved_id": "analog_001",
+      "descriptor_recomputation_errors": {
+        "QED": 1.6653345369377348e-16,
+        "SA": 0.0,
+        "tanimoto": 0.0
+      },
+      "potential_stereo": [
+        {
+          "type": "Atom_Tetrahedral",
+          "specified": "Unspecified",
+          "atom_or_bond_index": 21,
+          "controlling_atoms": [
+            20,
+            22,
+            29
+          ]
+        },
+        {
+          "type": "Atom_Tetrahedral",
+          "specified": "Unspecified",
+          "atom_or_bond_index": 24,
+          "controlling_atoms": [
+            23,
+            25,
+            28
+          ]
+        }
+      ],
+      "raw_smiles_match_all_sources": true
+    },
+    {
+      "saved_id": "analog_002",
+      "descriptor_recomputation_errors": {
+        "QED": 0.0,
+        "SA": 0.0,
+        "tanimoto": 0.0
+      },
+      "potential_stereo": [
+        {
+          "type": "Atom_Tetrahedral",
+          "specified": "Unspecified",
+          "atom_or_bond_index": 22,
+          "controlling_atoms": [
+            21,
+            23,
+            30
+          ]
+        },
+        {
+          "type": "Atom_Tetrahedral",
+          "specified": "Unspecified",
+          "atom_or_bond_index": 25,
+          "controlling_atoms": [
+            24,
+            26,
+            29
+          ]
+        }
+      ],
+      "raw_smiles_match_all_sources": true
+    },
+    {
+      "saved_id": "analog_003",
+      "descriptor_recomputation_errors": {
+        "QED": 0.0,
+        "SA": 0.0,
+        "tanimoto": 0.0
+      },
+      "potential_stereo": [
+        {
+          "type": "Atom_Tetrahedral",
+          "specified": "Unspecified",
+          "atom_or_bond_index": 22,
+          "controlling_atoms": [
+            21,
+            23,
+            30
+          ]
+        },
+        {
+          "type": "Atom_Tetrahedral",
+          "specified": "Unspecified",
+          "atom_or_bond_index": 25,
+          "controlling_atoms": [
+            24,
+            26,
+            29
+          ]
+        }
+      ],
+      "raw_smiles_match_all_sources": true
+    },
+    {
+      "saved_id": "analog_004",
+      "descriptor_recomputation_errors": {
+        "QED": 2.220446049250313e-16,
+        "SA": 0.0,
+        "tanimoto": 0.0
+      },
+      "potential_stereo": [
+        {
+          "type": "Atom_Tetrahedral",
+          "specified": "Unspecified",
+          "atom_or_bond_index": 21,
+          "controlling_atoms": [
+            20,
+            22,
+            29
+          ]
+        },
+        {
+          "type": "Atom_Tetrahedral",
+          "specified": "Unspecified",
+          "atom_or_bond_index": 24,
+          "controlling_atoms": [
+            23,
+            25,
+            28
+          ]
+        }
+      ],
+      "raw_smiles_match_all_sources": true
+    }
+  ],
+  "export": {
+    "width_mm": 177.53,
+    "height_mm": 182.73888888888888,
+    "raster_dpi": 600,
+    "text_font_sizes_pt": [
+      7.5,
+      8.0,
+      8.5,
+      9.0
+    ],
+    "structure_atom_font_size_pt": 8,
+    "layout": "two columns by three rows",
+    "embedded_raster_images": 0,
+    "depiction_topology_mappings": {
+      "dasatinib_seed": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32
+      ],
+      "analog_000": [
+        10,
+        9,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        8,
+        7,
+        6,
+        5,
+        4,
+        3,
+        2,
+        1,
+        0,
+        32,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        21,
+        20
+      ],
+      "analog_001": [
+        10,
+        9,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        8,
+        20,
+        5,
+        4,
+        3,
+        2,
+        1,
+        0,
+        32,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        21,
+        6,
+        7
+      ],
+      "analog_002": [
+        10,
+        9,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        8,
+        7,
+        6,
+        5,
+        4,
+        3,
+        2,
+        1,
+        0,
+        32,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        21,
+        20
+      ],
+      "analog_003": [
+        10,
+        9,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        8,
+        7,
+        6,
+        5,
+        4,
+        3,
+        2,
+        1,
+        0,
+        32,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        21,
+        20
+      ],
+      "analog_004": [
+        10,
+        9,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        8,
+        20,
+        5,
+        4,
+        3,
+        2,
+        1,
+        0,
+        32,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        21,
+        6,
+        7
+      ]
+    }
+  },
+  "source_csv": "results\\fig_top_analogs_source.csv",
+  "script_sha256": "c99fcbe3099e50e07f3927c65e5f446cc5051ef086b2da4c6f39be51d9a3c6b0"
+}

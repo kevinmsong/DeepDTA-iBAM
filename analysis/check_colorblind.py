@@ -1,17 +1,11 @@
-"""Check manuscript figures for colorblind safety and greyscale legibility.
+"""Screen manuscript palettes for color-vision accessibility.
 
-Two things are verified for every figure in the palette:
-
-1.  Every pair of palette colors stays distinguishable under simulated
-    protanopia, deuteranopia and tritanopia, and in greyscale. Distance is
-    CIE76 in Lab, with a threshold of 20, which is comfortably above the ~2.3
-    just-noticeable difference and is a common practical floor for categorical
-    encodings.
-2.  Each rendered figure is reported with its greyscale contrast range, so a
-    figure that collapses when printed in black and white is visible here.
-
-Colour-vision simulation uses the Brettel-Vienot-Mollon style linear transforms
-in LMS space, which is the standard approach for this check.
+Report pairwise CIE76 distances under approximate LMS simulations of
+protanopia, deuteranopia and tritanopia. The distance threshold of 20 is a
+project screening criterion, not an accessibility standard or a guarantee.
+Only colors used together in a figure enter its result; redundant encodings
+and rendered simulations also need visual inspection. The grayscale ink range
+is a contrast diagnostic and does not establish separation between series.
 
 Run from anywhere:  python analysis/check_colorblind.py
 """
@@ -29,7 +23,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 FIGURES = ["fig_architecture", "fig_localization_forest", "fig_benchmark_validity",
            "fig_efficiency", "fig_interaction_content", "fig_docking",
-           "fig_ibam_map", "fig_generation", "fig_residual_diagnostics"]
+           "fig_ibam_map", "fig_generation", "fig_residual_diagnostics",
+           "fig_ablation_scaffold_summary", "fig_top_analogs"]
 
 # sRGB -> LMS (Hunt-Pointer-Estevez, D65 normalised)
 RGB2LMS = np.array([[0.31399022, 0.63951294, 0.04649755],
@@ -129,7 +124,7 @@ def main() -> None:
     # style, border style or an axis label are noted as redundantly encoded.
     per_fig = {
         "fig_architecture": (["primary", "secondary", "tertiary"], "border style + legend"),
-        "fig_localization_forest": (["primary", "secondary"], "marker shape"),
+        "fig_localization_forest": (["primary", "dark"], "marker shape"),
         "fig_benchmark_validity": (["primary", "secondary"], "axis labels"),
         "fig_efficiency": (["primary", "secondary", "tertiary"], "marker shape"),
         "fig_interaction_content": (["primary", "secondary"], "per-bar axis labels"),
@@ -137,8 +132,10 @@ def main() -> None:
         "fig_ibam_map": (["secondary", "grey"], "marker shape"),
         "fig_generation": (["primary", "secondary", "tertiary"], "marker shape + hatch"),
         "fig_residual_diagnostics": (["secondary", "dark"], "line style"),
+        "fig_ablation_scaffold_summary": (["primary", "grey"], "marker shape + row labels"),
     }
     print("\n=== per-figure colour separation ===")
+    print("  fig_top_analogs: monochrome structures, text, and explicit screening labels; no color-only encoding")
     worst_fig = (1e9, "", "", "", "")
     for fig, (used, redundant) in per_fig.items():
         fmin, fcond, fpair = 1e9, "", ("", "")
@@ -165,10 +162,10 @@ def main() -> None:
     print("\n=== sequential colormap ===")
     seq_ok = True
     try:
-        import matplotlib.cm as cm
+        import matplotlib
         from figure_style import SEQUENTIAL
         samples = np.linspace(0, 1, 32)
-        rgb = np.array([cm.get_cmap(SEQUENTIAL)(s)[:3] for s in samples])
+        rgb = np.array([matplotlib.colormaps[SEQUENTIAL](s)[:3] for s in samples])
         for cond in ["normal"] + list(SIMS):
             cols = rgb if cond == "normal" else np.array(
                 [simulate(c, cond) for c in rgb])
@@ -208,7 +205,7 @@ def main() -> None:
           f"({worst[2]} vs {worst[3]}), across hues no single figure combines")
     print(f"per-figure worst case:   dE {worst_fig[0]:.1f} in {worst_fig[1]} "
           f"under {worst_fig[2]} ({worst_fig[3]} vs {worst_fig[4]})")
-    print("FIGURES COLORBLIND-SAFE:", worst_fig[0] >= THRESHOLD and seq_ok)
+    print("PER-FIGURE PALETTE SCREEN PASSED:", worst_fig[0] >= THRESHOLD and seq_ok)
 
 
 if __name__ == "__main__":

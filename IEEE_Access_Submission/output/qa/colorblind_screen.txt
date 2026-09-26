@@ -1,0 +1,43 @@
+=== palette separation (CIE76, threshold 20) ===
+  normal         min dE =   26.4  (primary vs muted)  ok
+  protanopia     min dE =   23.5  (tertiary vs muted)  ok
+  deuteranopia   min dE =   16.4  (tertiary vs accent)  TOO CLOSE
+  tritanopia     min dE =   10.7  (tertiary vs quaternary)  TOO CLOSE
+  greyscale      min luminance gap = 0.011  TOO CLOSE
+    luminances: primary 0.152, secondary 0.222, accent 0.257, tertiary 0.293, muted 0.405, quaternary 0.416
+
+=== per-figure colour separation ===
+  fig_top_analogs: monochrome structures, text, and explicit screening labels; no color-only encoding
+  fig_architecture             min dE  27.0 (tritanopia, secondary/tertiary)  ok
+  fig_localization_forest      min dE  55.4 (tritanopia, primary/dark)  ok
+  fig_benchmark_validity       min dE  85.6 (tritanopia, primary/secondary)  ok
+  fig_efficiency               min dE  27.0 (tritanopia, secondary/tertiary)  ok
+  fig_interaction_content      min dE  85.6 (tritanopia, primary/secondary)  ok
+  fig_docking                  min dE  27.0 (tritanopia, secondary/tertiary)  ok
+  fig_ibam_map                 min dE  56.2 (tritanopia, secondary/grey)  ok
+  fig_generation               min dE  27.0 (tritanopia, secondary/tertiary)  ok
+  fig_residual_diagnostics     min dE  76.6 (protanopia, secondary/dark)  ok
+  fig_ablation_scaffold_summary min dE  30.1 (tritanopia, primary/grey)  ok
+
+=== sequential colormap ===
+  cividis normal         lightness span  77.3  ok
+  cividis protanopia     lightness span  76.3  ok
+  cividis deuteranopia   lightness span  79.0  ok
+  cividis tritanopia     lightness span  75.5  ok
+
+=== rendered figures ===
+  fig_architecture             greyscale ink range 0.97  ok
+  fig_localization_forest      greyscale ink range 0.97  ok
+  fig_benchmark_validity       greyscale ink range 0.97  ok
+  fig_efficiency               greyscale ink range 0.97  ok
+  fig_interaction_content      greyscale ink range 0.97  ok
+  fig_docking                  greyscale ink range 0.97  ok
+  fig_ibam_map                 greyscale ink range 0.97  ok
+  fig_generation               greyscale ink range 0.97  ok
+  fig_residual_diagnostics     greyscale ink range 0.97  ok
+  fig_ablation_scaffold_summary greyscale ink range 0.97  ok
+  fig_top_analogs              greyscale ink range 0.97  ok
+
+full palette worst case: dE 10.7 under tritanopia (tertiary vs quaternary), across hues no single figure combines
+per-figure worst case:   dE 27.0 in fig_architecture under tritanopia (secondary vs tertiary)
+PER-FIGURE PALETTE SCREEN PASSED: True

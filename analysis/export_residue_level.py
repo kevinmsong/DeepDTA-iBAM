@@ -1,12 +1,13 @@
 """
 Export residue-level attention and contact labels for the 5-complex panel.
 
-The main-text meta-analysis pools one AUROC per complex.  That summary throws
-away the residue-level structure and forces the type I / type II question to be
-asked post hoc on 2 complexes against 3.  This script re-runs the same saved
-checkpoint over the same five complexes and writes one row per residue, so the
-hypothesis can be tested directly in a mixed-effects model with complex as a
-random effect and binding mode as a fixed effect.
+This script reruns the saved checkpoint over the five complexes and writes one
+row per residue for inspection alongside the per-complex contact AUROCs. The
+panel contains four targets: 4RJ3 is CDK2 with ligand 3QS, and 4WKQ is EGFR with
+gefitinib (IRE). Earlier metadata mislabeled 4RJ3 as VEGFR2 and assigned it an
+unsupported type II binding mode. The resulting mode-stratified analyses were
+withdrawn. Binding-mode fields are now exported as "unknown" pending verified
+structural reannotation; they must not be treated as type I or type II labels.
 
 Reads the cached PDB files and the cached ligand-graph / ESM-C protein caches
 built by run_interpretability_benchmark.py, so no network access is required.
@@ -25,8 +26,8 @@ per-residue profile derived from it:
       attention (n_atoms x n_residues), atom_symbol, residue_label, contact,
       pdb_id, protein, binding_mode, smiles
 
-Run from the submission directory:  python export_residue_level.py
-                                    python export_residue_level.py --dump-matrix
+Run from anywhere: python analysis/export_residue_level.py
+                   python analysis/export_residue_level.py --dump-matrix
 
 Reproducibility note
 --------------------
@@ -90,15 +91,14 @@ PDB_DIR = ROOT / "results" / "downloads" / "interpretability_pdb"
 CACHE_DIR = ROOT / "results" / "cache"
 OUT = ROOT / "results" / "interpretability_residue_level.csv"
 
-# Binding mode as annotated in the main text: imatinib (2HYY) and the annotated
-# DFG-out ligand (4RJ3) are type II, the remaining three are type I
-# ATP-competitive hinge binders.
+# Preserve the field for file compatibility, without reproducing unsupported
+# biological strata. Binding-mode analysis requires verified reannotation.
 PANEL = [
-    ("6YOJ", "P4N", "FAK1", "I"),
-    ("4WKQ", "IRE", "EGFR", "I"),
-    ("2HYY", "STI", "ABL1", "II"),
-    ("1KE6", "LS2", "CDK2", "I"),
-    ("4RJ3", "3QS", "VEGFR2", "II"),
+    ("6YOJ", "P4N", "FAK1", "unknown"),
+    ("4WKQ", "IRE", "EGFR", "unknown"),  # IRE is gefitinib.
+    ("2HYY", "STI", "ABL1", "unknown"),
+    ("1KE6", "LS2", "CDK2", "unknown"),
+    ("4RJ3", "3QS", "CDK2", "unknown"),
 ]
 CUTOFF = 4.5
 
@@ -146,7 +146,7 @@ def main() -> None:
     frames = []
     for pdb_id, resname, protein, mode in PANEL:
         tag = f"ibam_{pdb_id}_{resname}".lower()
-        print(f"[complex] {pdb_id} {protein} + {resname} (type {mode})", flush=True)
+        print(f"[complex] {pdb_id} {protein} + {resname} (binding mode: {mode})", flush=True)
 
         pdb_text = (PDB_DIR / f"{pdb_id}.pdb").read_text(encoding="utf-8")
         protein_atoms, ligand_groups = parse_pdb_records(pdb_text, ligand_resname=resname)

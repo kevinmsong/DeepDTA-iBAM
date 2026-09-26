@@ -1,15 +1,14 @@
 """Shared publication figure style for the IEEE Access manuscript.
 
-Every figure in the paper is built through this module so the whole set reads as
-one system: one font ladder, one line weight, one colorblind-safe palette, and
-one export path that writes both a vector PDF for the typeset manuscript and a
-600 dpi raster for submission systems that require one.
+Plots use shared fonts, line weights, and a colorblind-safe palette. The
+chemical structure figure uses RDKit with monochrome atoms and bonds. Both
+export vector PDFs and 600 dpi rasters for submission systems that require them.
 
 Design rules enforced here:
 
-  * Sized to IEEE column width (3.5 in) or full text width (7.16 in) at final
-    scale, so no figure is rescaled by ``includegraphics`` and no text ends up
-    below about 7 pt.
+  * Sized to the official IEEE Access column width (85.29 mm) or full text
+    width (177.53 mm). Supplementary plots use their article display width.
+    Final text sizes are measured by the submission packager.
   * Fonts embedded as Type 42 so text stays selectable and is never rasterised.
   * A colorblind-safe palette (Okabe-Ito), with colour never the only channel
     carrying meaning; callers pair it with ``MARKERS`` or ``LINESTYLES``.
@@ -34,9 +33,9 @@ import matplotlib.pyplot as plt
 ROOT = Path(__file__).resolve().parent.parent
 RESULTS = ROOT / "results"
 
-# IEEE two-column geometry, in inches.
-COL_WIDTH = 3.5
-FULL_WIDTH = 7.16
+# Official IEEE Access template geometry, in inches (May 2026 author bundle).
+COL_WIDTH = 85.29 / 25.4
+FULL_WIDTH = 177.53 / 25.4
 
 DPI = 600
 
@@ -146,15 +145,37 @@ def panel_labels(axes, labels=None, x: float = -0.16, y: float = 1.04) -> None:
 
 
 def save(fig, name: str, outdir: Path | None = None) -> tuple[Path, Path]:
-    """Write the figure as a vector PDF and a 600 dpi PNG."""
+    """Write vector PDF and 600 dpi PNG at their manuscript inclusion width."""
+    import fitz
     outdir = Path(outdir) if outdir else RESULTS
     outdir.mkdir(parents=True, exist_ok=True)
     pdf = outdir / f"{name}.pdf"
     png = outdir / f"{name}.png"
-    fig.savefig(pdf)
-    fig.savefig(png, dpi=DPI)
+    # Normalize the tight-cropped page to its actual typeset width. Rasterize
+    # that vector page at 600 dpi, avoiding an effective-resolution loss when
+    # the manuscript enlarges a tight crop. TeX points are 1/72.27 inch.
+    width_in = (6.37 if name in {
+        "fig_residual_diagnostics", "fig_ablation_scaffold_summary"
+    } else COL_WIDTH if name == "fig_localization_forest" else FULL_WIDTH)
+    source = fitz.open(stream=_pdf_bytes(fig), filetype="pdf")
+    target = fitz.open()
+    rect = source[0].rect
+    width_pt = width_in * 72
+    page = target.new_page(width=width_pt, height=rect.height * width_pt / rect.width)
+    page.show_pdf_page(page.rect, source, 0)
+    target.save(pdf, garbage=4, deflate=True)
+    page.get_pixmap(dpi=DPI, alpha=False).save(png)
+    target.close()
+    source.close()
     plt.close(fig)
     return pdf, png
+
+
+def _pdf_bytes(fig) -> bytes:
+    from io import BytesIO
+    stream = BytesIO()
+    fig.savefig(stream, format="pdf")
+    return stream.getvalue()
 
 
 def check_min_font(fig, minimum: float = 6.5) -> list[str]:

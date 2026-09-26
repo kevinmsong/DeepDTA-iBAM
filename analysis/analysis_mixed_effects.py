@@ -1,13 +1,15 @@
 """
-Residue-level mixed-effects analysis of attention localization.
+Archived, withdrawn binding-mode analysis of attention localization.
 
-The main text originally summarized the structural-localization panel by pooling
-one AUROC per complex (Hanley--McNeil inverse-variance weighting) and then, post
-hoc, noticing that the two complexes whose intervals excluded chance were both
-type II DFG-out binders.  Pooling discards the residue-level structure, and the
-2-vs-3 split is a comparison of five numbers.
+The historical labels incorrectly identified 4RJ3 as VEGFR2 and assigned an
+unsupported type II binding mode. It is CDK2 with ligand 3QS. The reported mode
+contrast, odds ratios, and mode-label permutation test are therefore unsupported
+and have been removed from the manuscripts. This implementation is retained as
+an archive; it is not a current validation result. Its loader rejects the old
+target metadata and unknown mode labels. Verified structural reannotation is
+required before a new binding-mode analysis can be interpreted.
 
-This module replaces that with a model fit to the residues themselves:
+The archived model was:
 
     contact_ij ~ 1 + r_ij * mode_j            (fixed effects)
                    + (1 + r_ij | complex_j)   (random effects)
@@ -31,16 +33,16 @@ sensitivity analysis.
 Fit by variational Bayes (statsmodels BinomialBayesMixedGLM), because a
 5-cluster Laplace GLMM is not reliably identified.
 
-The module also reports the exact permutation limit: with 2 type II complexes
-among 5, only C(5,2) = 10 assignments of the binding-mode label exist, so the
+Under the historical two-versus-three label assignment, only C(5,2) = 10
+assignments of the binding-mode label exist, so the
 smallest attainable one-sided permutation p value is 0.10.  No panel of this
 size can establish the binding-mode effect at conventional thresholds,
 whatever the true effect.
 
 Outputs
 -------
-  table_mixed_effects.tex      fixed-effect estimates (main text)
-  mixed_effects_summary.json   machine-readable results
+  table_mixed_effects.tex      historical estimates, withdrawn
+  mixed_effects_summary.json   historical results, withdrawn
 
 Run from the submission directory:  python analysis_mixed_effects.py
 """
@@ -75,6 +77,10 @@ Z = 1.959964
 
 def load():
     d = pd.read_csv(SRC)
+    if (d.loc[d["pdb_id"] == "4RJ3", "protein"] != "CDK2").any():
+        raise ValueError("Archived 4RJ3 target metadata is incorrect; binding-mode results are withdrawn.")
+    if not set(d["binding_mode"]).issubset({"I", "II"}):
+        raise ValueError("Binding modes are unverified; unknown labels cannot be encoded as type I.")
     d["mode_II"] = (d["binding_mode"] == "II").astype(float)
     # Within-complex attention rank, standardized. See module docstring for why
     # the rank scale rather than the raw scale.

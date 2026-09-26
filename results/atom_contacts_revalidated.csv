@@ -1,0 +1,6 @@
+pdb_id,protein,ligand,n_residues,n_contact_residues,n_atoms,n_contact_atoms,atom_base_rate,n_valid_atom_mappings,n_distinct_graph_label_vectors,archived_atom_auroc,old_order_rerun_auroc,corrected_atom_auroc_min,corrected_atom_auroc_max,archived_atom_topk_overlap,corrected_atom_topk_overlap_min,corrected_atom_topk_overlap_max,residue_labels_identical
+1KE6,CDK2,LS2,280,16,27,26,0.9629629629629629,4,1,0.1923076923076923,0.19230769230769232,0.2692307692307692,0.2692307692307692,0.9615384615384616,0.9615384615384616,0.9615384615384616,True
+2HYY,ABL1,STI,263,25,37,37,1.0,4,1,0.0,NA,NA,NA,1.0,1.0,1.0,True
+4RJ3,CDK2,3QS,287,19,29,29,1.0,4,1,0.0,NA,NA,NA,1.0,1.0,1.0,True
+4WKQ,EGFR,IRE,296,18,31,31,1.0,2,1,0.0,NA,NA,NA,1.0,1.0,1.0,True
+6YOJ,FAK1,P4N,259,22,34,34,1.0,12,1,0.0,NA,NA,NA,1.0,1.0,1.0,True

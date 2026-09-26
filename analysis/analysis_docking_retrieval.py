@@ -45,8 +45,8 @@ def ecfp_nearest_active(smiles: list[str], y: np.ndarray) -> np.ndarray:
     """Leave-one-out nearest-active ECFP similarity within this candidate set.
 
     Each candidate is scored by its greatest Tanimoto similarity to an active
-    other than itself, using only the actives present in this set, so the
-    baseline sees exactly the evidence the evaluated set contains.
+    other than itself, using a within-subset active reference. These known
+    active labels provide reference information unavailable to the other rankers.
     """
     from rdkit import Chem, DataStructs, RDLogger
     from rdkit.Chem import rdFingerprintGenerator
@@ -70,16 +70,31 @@ def ecfp_nearest_active(smiles: list[str], y: np.ndarray) -> np.ndarray:
     return scores
 
 
+def expected_rank_labels(y: np.ndarray, s: np.ndarray) -> np.ndarray:
+    """Expected label at each rank over all orderings within equal-score ties.
+
+    Threshold enrichment/recovery and BEDROC are linear in ranked labels,
+    so block means give their exact averages over possible tied orderings.
+    """
+    order = np.argsort(-s, kind="stable")
+    sorted_scores = s[order]
+    sorted_labels = y[order].astype(float)
+    starts = np.r_[0, np.flatnonzero(sorted_scores[1:] != sorted_scores[:-1]) + 1]
+    sizes = np.diff(np.r_[starts, len(y)])
+    block_means = np.add.reduceat(sorted_labels, starts) / sizes
+    return np.repeat(block_means, sizes)
+
+
 def enrichment(y: np.ndarray, s: np.ndarray, frac: float) -> float:
     n = max(1, int(round(len(y) * frac)))
-    idx = np.argsort(-s)[:n]
-    return (float(y[idx].sum()) / n) / (y.mean() + 1e-12)
+    labels = expected_rank_labels(y, s)
+    return (float(labels[:n].sum()) / n) / (y.mean() + 1e-12)
 
 
 def recovery(y: np.ndarray, s: np.ndarray, frac: float) -> float:
     n = max(1, int(round(len(y) * frac)))
-    idx = np.argsort(-s)[:n]
-    return float(y[idx].sum()) / max(1.0, float(y.sum()))
+    labels = expected_rank_labels(y, s)
+    return float(labels[:n].sum()) / max(1.0, float(y.sum()))
 
 
 def bedroc(y: np.ndarray, s: np.ndarray, alpha: float = 20.0) -> float:
@@ -87,10 +102,10 @@ def bedroc(y: np.ndarray, s: np.ndarray, alpha: float = 20.0) -> float:
     n_act = int(y.sum())
     if n_act == 0 or n_act == n:
         return float("nan")
-    order = np.argsort(-s)
-    ranks = np.where(y[order] == 1)[0] + 1
+    labels = expected_rank_labels(y, s)
+    ranks = np.arange(1, n + 1)
     ra = n_act / n
-    s_sum = float(np.sum(np.exp(-alpha * ranks / n)))
+    s_sum = float(np.sum(labels * np.exp(-alpha * ranks / n)))
     rie = s_sum / (ra * (1 - np.exp(-alpha)) / (np.exp(alpha / n) - 1))
     return float((rie * ra * np.sinh(alpha / 2) /
                   (np.cosh(alpha / 2) - np.cosh(alpha / 2 - alpha * ra)))
@@ -135,22 +150,29 @@ def main() -> None:
     if not SCORES.exists():
         raise SystemExit(f"missing {SCORES}; run analysis_docking_baseline.py first")
 
-    d = pd.read_csv(SCORES)
+    raw_scores = pd.read_csv(SCORES)
+    d = raw_scores.copy()
     # A resumed run can append a ligand more than once; keep the first success.
-    d = d[d["status"] == "ok"].drop_duplicates(subset=["set", "ident"], keep="first")
+    d = d[d["status"] == "ok"].drop_duplicates(subset=["set", "ident", "smiles"], keep="first")
 
     out: dict = {"seed": SEED, "n_bootstrap": N_BOOT,
-                 "score_convention": "Vina reports binding free energy; negated for ranking"}
+                 "score_convention": "Vina reports binding free energy; negated for ranking",
+                 "rank_tie_handling": "Enrichment, recovery, and BEDROC average over all orderings within tied-score groups; AUROC and average precision use scikit-learn tie handling."}
 
     # ------------------------------------------------------------ panel
     dp = d[d["set"] == "egfr_panel"]
     panel = pd.read_csv(PANEL)
-    m = panel.merge(dp[["ident", "vina_kcal"]], on="ident", how="inner")
+    m = panel.merge(dp[["ident", "smiles", "vina_kcal"]], on=["ident", "smiles"], how="inner")
+    attempted = set(map(tuple, raw_scores.loc[raw_scores["set"] == "egfr_panel",
+                                             ["ident", "smiles"]].to_numpy()))
+    successful = set(map(tuple, dp[["ident", "smiles"]].to_numpy()))
 
     out["panel"] = {
         "n_candidates_total": int(len(panel)),
         "n_docked": int(len(m)),
-        "n_failed": int(len(panel) - len(m)),
+        "n_not_docked": int(len(panel) - len(m)),
+        "n_attempted": len(attempted),
+        "n_failed": len(attempted - successful),
         "n_actives_docked": int(m["label"].sum()),
         "n_decoys_docked": int((1 - m["label"]).sum()),
         "active_docking_rate": float(m["label"].sum() / max(panel["label"].sum(), 1)),
@@ -162,12 +184,11 @@ def main() -> None:
     y = m["label"].to_numpy(int)
 
     # The released ecfp_score is a leave-one-out nearest-active similarity
-    # computed against all 300 panel actives.  Scoring only a subsample against
-    # that full reference set hands the baseline information the subsample does
-    # not contain, which inflates it.  Recompute the same baseline using only
-    # the actives that were actually docked, so every ranker sees the same
-    # candidate set and the same evidence.  The full-panel score is retained for
-    # reference.
+    # computed against all 300 panel actives. Recompute using only the actives
+    # that were docked: the rankers share the same candidates, and the fingerprint
+    # method uses a within-subset active reference. It still uses known active
+    # labels unavailable to the other rankers. Here all 300 actives were docked,
+    # so the reference sets coincide. Retain the full-panel score for comparison.
     ecfp_within = ecfp_nearest_active(m["smiles"].astype(str).tolist(), y)
 
     rankers = {

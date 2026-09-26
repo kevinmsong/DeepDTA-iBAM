@@ -75,8 +75,14 @@ def main() -> None:
                 borderpad=0.25, handlelength=1.5, labelspacing=0.25)
 
     # --- (b) residual against measured value -------------------------------
-    ax_b.hexbin(obs, diff, gridsize=42, cmap=SEQUENTIAL, mincnt=1,
-                linewidths=0, zorder=2)
+    hb_b = ax_b.hexbin(obs, diff, gridsize=42, cmap=SEQUENTIAL, mincnt=1,
+                       linewidths=0, zorder=2)
+    # Both panels use the count scale represented by the shared colorbar.
+    from matplotlib.colors import Normalize
+    count_norm = Normalize(vmin=1, vmax=max(hb.get_array().max(),
+                                           hb_b.get_array().max()))
+    hb.set_norm(count_norm)
+    hb_b.set_norm(count_norm)
     ax_b.axhline(0.0, color=COLORS["dark"], linewidth=0.8, zorder=3)
 
     # Binned median, so systematic drift is visible through the density.

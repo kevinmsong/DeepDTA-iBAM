@@ -1,0 +1,483 @@
+{
+  "seed": 1337,
+  "outer_folds": 5,
+  "inner_folds": 5,
+  "n_ligands": 3300,
+  "n_actives": 300,
+  "n_residue_features": 1210,
+  "thread_limit": 2,
+  "input_sha256": {
+    "panel_attention_residue.npy": "9cc3bf594b03268c4f1ab383fa692a054e87a532bc80a04cb1b3d456e4192168",
+    "panel_attention_index.csv": "484f7a8d155c0789a1b8d463065d749ad0386668e0c3f9375df30662d43919a8",
+    "panel_attention_meta.json": "c7ad18dbfa14083a46e70d98e200c1e7bdaf3b860ae1a53b5f167b00c3decf03",
+    "dude_egfr_panel_scored.csv": "edda97bc5746dc5016f4fdef096b4402a59ee9853edfffe46887d828af920cbb",
+    "contact_information_summary.json": "26b6cc8aafcc90e44cadde483c853f0cf0ea03cecf5309a1af082da68763f660"
+  },
+  "script_sha256": "535cc24e18c8ee54e4a600b4e3054a646ee524bac0cf2bcdb750ab7b5448d37a",
+  "versions": {
+    "numpy": "2.4.1",
+    "scipy": "1.17.0",
+    "scikit_learn": "1.8.0",
+    "rdkit": "2025.09.3"
+  },
+  "alignment_checks": {
+    "panel_index_columns_exact_match": {
+      "role": true,
+      "ident": true,
+      "smiles": true,
+      "label": true,
+      "model_score": true,
+      "ecfp_score": true
+    },
+    "unique_smiles": true,
+    "duplicate_identifier_rows_beyond_first": 1,
+    "duplicate_identifier_records": [
+      {
+        "role": "decoy",
+        "ident": "C39672682",
+        "smiles": "Cc1cc(c(c(c1C)S(=O)(=O)N2CCC(CC2)C(=O)Nc3nc(cs3)C4=NC=CC4)C)C",
+        "label": 0
+      },
+      {
+        "role": "decoy",
+        "ident": "C39672682",
+        "smiles": "Cc1cc(c(c(c1C)S(=O)(=O)N2CCC(CC2)C(=O)Nc3nc(cs3)C4=[NH+]C=CC4)C)C",
+        "label": 0
+      }
+    ],
+    "all_graph_atom_counts_match_structures": true,
+    "atom_column_note": "Archived n_heavy_atoms_padded is graph atom count (RDKit GetNumAtoms), including retained explicit hydrogens in six molecules.",
+    "max_absolute_rerun_vs_saved_affinity_difference": 1.8981933589401478e-06,
+    "rerun_vs_saved_affinity_correlation": 0.9999999999997398,
+    "max_profile_sum_error": 1.9572325982153416e-08,
+    "export_sampler_preserves_constant_target_row_order": true,
+    "limitation": "Saved profile rows have no embedded ligand IDs; alignment is supported by export code, row identities, atom counts, and independent prediction agreement."
+  },
+  "methods": {
+    "logistic": "Shuffled stratified 5-fold CV, seed 1337; fixed L2 C=0.1, balanced class weights; StandardScaler fit only on outer training rows.",
+    "residualization": "Fit descriptor scaling and ordinary least-squares profile-on-descriptor regression with intercept on each outer training fold; transform held-out rows using those fitted coefficients; fit residual scaling and logistic probe on training residuals only.",
+    "ridge": "Shuffled outer 5-fold KFold, seed 1337, matching archived folds; within each training fold use shuffled 5-fold KFold seed 1337 to select alpha by mean validation R2 from [1,10,100,1000]; scaling refit within every inner training fold; refit selected pipeline on all outer training rows.",
+    "metrics": "AUROC and R2 calculated once over all concatenated out-of-fold predictions; per-fold metrics are also retained.",
+    "nulls": "One fixed permutation each of labels and predicted affinity, preserving the archived script's RNG state consumption; nested penalty selection repeated for the regression null."
+  },
+  "descriptor_names": [
+    "MW",
+    "cLogP",
+    "TPSA",
+    "HBD",
+    "HBA",
+    "RotB",
+    "Rings",
+    "HeavyAtoms",
+    "FracCSP3",
+    "FormalCharge"
+  ],
+  "affinity_regression": {
+    "target": "model predicted affinity, not experimental affinity",
+    "r2_from_attention_profile": 0.3208201610883632,
+    "r2_shuffled_null": -0.029269084009742485
+  },
+  "classification": {
+    "auroc_from_attention_profile": 0.9835233333333333,
+    "auroc_from_descriptors": 0.90883,
+    "auroc_from_descriptors_plus_profile": 0.9874833333333334,
+    "auroc_from_profile_residualised_on_descriptors": 0.9629566666666667,
+    "auroc_attention_shuffled_null": 0.49869444444444444,
+    "base_rate": 0.09090909090909091,
+    "auroc_model_score": 0.8388844444444445,
+    "auroc_ecfp_baseline": 0.9921966666666666
+  },
+  "classification_fold_details": {
+    "attention_profile": [
+      {
+        "fold": 0,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.9776944444444444,
+        "solver_iterations": 131
+      },
+      {
+        "fold": 1,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.9919444444444444,
+        "solver_iterations": 125
+      },
+      {
+        "fold": 2,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.9875833333333333,
+        "solver_iterations": 129
+      },
+      {
+        "fold": 3,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.9730277777777777,
+        "solver_iterations": 133
+      },
+      {
+        "fold": 4,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.9889722222222221,
+        "solver_iterations": 130
+      }
+    ],
+    "descriptors": [
+      {
+        "fold": 0,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.8993611111111111,
+        "solver_iterations": 16
+      },
+      {
+        "fold": 1,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.8946111111111111,
+        "solver_iterations": 19
+      },
+      {
+        "fold": 2,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.9144444444444445,
+        "solver_iterations": 18
+      },
+      {
+        "fold": 3,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.9033888888888889,
+        "solver_iterations": 20
+      },
+      {
+        "fold": 4,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.9324166666666667,
+        "solver_iterations": 17
+      }
+    ],
+    "descriptors_plus_profile": [
+      {
+        "fold": 0,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.9814166666666666,
+        "solver_iterations": 122
+      },
+      {
+        "fold": 1,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.9917777777777778,
+        "solver_iterations": 120
+      },
+      {
+        "fold": 2,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.9886666666666666,
+        "solver_iterations": 128
+      },
+      {
+        "fold": 3,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.9817777777777777,
+        "solver_iterations": 145
+      },
+      {
+        "fold": 4,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.9944166666666667,
+        "solver_iterations": 133
+      }
+    ],
+    "profile_residualised_on_descriptors": [
+      {
+        "fold": 0,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.9678611111111111,
+        "solver_iterations": 157
+      },
+      {
+        "fold": 1,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.9593888888888888,
+        "solver_iterations": 163
+      },
+      {
+        "fold": 2,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.9720555555555555,
+        "solver_iterations": 178
+      },
+      {
+        "fold": 3,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.9474166666666666,
+        "solver_iterations": 173
+      },
+      {
+        "fold": 4,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.9700833333333333,
+        "solver_iterations": 199
+      }
+    ],
+    "attention_shuffled_null": [
+      {
+        "fold": 0,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.5126944444444443,
+        "solver_iterations": 299
+      },
+      {
+        "fold": 1,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.4671111111111111,
+        "solver_iterations": 314
+      },
+      {
+        "fold": 2,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.5143888888888889,
+        "solver_iterations": 294
+      },
+      {
+        "fold": 3,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.4976111111111111,
+        "solver_iterations": 303
+      },
+      {
+        "fold": 4,
+        "n_train": 2640,
+        "n_test": 660,
+        "auroc": 0.50475,
+        "solver_iterations": 292
+      }
+    ]
+  },
+  "ridge_fold_details": [
+    {
+      "fold": 0,
+      "n_train": 2640,
+      "n_test": 660,
+      "selected_alpha": 10.0,
+      "inner_mean_validation_r2": [
+        0.2450702546927018,
+        0.3318348923720879,
+        0.32009440322954463,
+        0.2662979327378167
+      ],
+      "outer_r2": 0.2338249594337224
+    },
+    {
+      "fold": 1,
+      "n_train": 2640,
+      "n_test": 660,
+      "selected_alpha": 10.0,
+      "inner_mean_validation_r2": [
+        0.19327696963624613,
+        0.30476647724064787,
+        0.3034378649999109,
+        0.25788435352134725
+      ],
+      "outer_r2": 0.30697551150339775
+    },
+    {
+      "fold": 2,
+      "n_train": 2640,
+      "n_test": 660,
+      "selected_alpha": 10.0,
+      "inner_mean_validation_r2": [
+        0.21181035733506284,
+        0.31650701706070794,
+        0.30731467308024857,
+        0.254417611137885
+      ],
+      "outer_r2": 0.3581071672037498
+    },
+    {
+      "fold": 3,
+      "n_train": 2640,
+      "n_test": 660,
+      "selected_alpha": 100.0,
+      "inner_mean_validation_r2": [
+        0.14493872282995415,
+        0.2881427932129281,
+        0.29649020919345837,
+        0.24847823569206548
+      ],
+      "outer_r2": 0.37123137170567777
+    },
+    {
+      "fold": 4,
+      "n_train": 2640,
+      "n_test": 660,
+      "selected_alpha": 100.0,
+      "inner_mean_validation_r2": [
+        0.17322474553200382,
+        0.3000453981082983,
+        0.3037704021780373,
+        0.24992624268276203
+      ],
+      "outer_r2": 0.3267840813240459
+    }
+  ],
+  "ridge_shuffled_fold_details": [
+    {
+      "fold": 0,
+      "n_train": 2640,
+      "n_test": 660,
+      "selected_alpha": 1000.0,
+      "inner_mean_validation_r2": [
+        -0.4717515688562305,
+        -0.17213481219934565,
+        -0.06152650050113775,
+        -0.027026495251055847
+      ],
+      "outer_r2": -0.020707293324050413
+    },
+    {
+      "fold": 1,
+      "n_train": 2640,
+      "n_test": 660,
+      "selected_alpha": 1000.0,
+      "inner_mean_validation_r2": [
+        -0.4295245939536815,
+        -0.14536009652699206,
+        -0.04550593618594072,
+        -0.017174107542615547
+      ],
+      "outer_r2": -0.03586268809650006
+    },
+    {
+      "fold": 2,
+      "n_train": 2640,
+      "n_test": 660,
+      "selected_alpha": 1000.0,
+      "inner_mean_validation_r2": [
+        -0.5359590347001021,
+        -0.1830246161480209,
+        -0.06122209155656995,
+        -0.024608748486460063
+      ],
+      "outer_r2": -0.02533667515290894
+    },
+    {
+      "fold": 3,
+      "n_train": 2640,
+      "n_test": 660,
+      "selected_alpha": 1000.0,
+      "inner_mean_validation_r2": [
+        -0.5263602289672842,
+        -0.1997397438094914,
+        -0.07713651005969249,
+        -0.0339517965722234
+      ],
+      "outer_r2": -0.025772110025358952
+    },
+    {
+      "fold": 4,
+      "n_train": 2640,
+      "n_test": 660,
+      "selected_alpha": 1000.0,
+      "inner_mean_validation_r2": [
+        -0.4203366954107174,
+        -0.16744475185346475,
+        -0.06856750620864713,
+        -0.024084805972288105
+      ],
+      "outer_r2": -0.04260887842992145
+    }
+  ],
+  "comparison_with_archive": {
+    "classification": {
+      "auroc_from_attention_profile": {
+        "archived": 0.98358,
+        "revalidated": 0.9835233333333333,
+        "change": -5.6666666666704835e-05
+      },
+      "auroc_from_descriptors": {
+        "archived": 0.9088333333333333,
+        "revalidated": 0.90883,
+        "change": -3.3333333332441484e-06
+      },
+      "auroc_from_descriptors_plus_profile": {
+        "archived": 0.9875522222222222,
+        "revalidated": 0.9874833333333334,
+        "change": -6.888888888878508e-05
+      },
+      "auroc_from_profile_residualised_on_descriptors": {
+        "archived": 0.9574811111111111,
+        "revalidated": 0.9629566666666667,
+        "change": 0.005475555555555567
+      },
+      "auroc_attention_shuffled_null": {
+        "archived": 0.4986177777777778,
+        "revalidated": 0.49869444444444444,
+        "change": 7.666666666661381e-05
+      },
+      "base_rate": {
+        "archived": 0.09090909090909091,
+        "revalidated": 0.09090909090909091,
+        "change": 0.0
+      },
+      "auroc_model_score": {
+        "archived": 0.8388844444444445,
+        "revalidated": 0.8388844444444445,
+        "change": 0.0
+      },
+      "auroc_ecfp_baseline": {
+        "archived": 0.9921966666666666,
+        "revalidated": 0.9921966666666666,
+        "change": 0.0
+      }
+    },
+    "affinity_regression": {
+      "r2_from_attention_profile": {
+        "archived": 0.3322318190069501,
+        "revalidated": 0.3208201610883632,
+        "change": -0.011411657918586893
+      },
+      "r2_shuffled_null": {
+        "archived": -0.029269084009742485,
+        "revalidated": -0.029269084009742485,
+        "change": 0.0
+      }
+    }
+  },
+  "archived_method_current_environment_classification": {
+    "auroc_from_attention_profile": 0.9835233333333333,
+    "auroc_from_descriptors": 0.90883,
+    "auroc_from_descriptors_plus_profile": 0.9874833333333334,
+    "auroc_attention_shuffled_null": 0.49869444444444444,
+    "auroc_from_profile_residualised_on_descriptors": 0.9574477777777778
+  },
+  "limitations": [
+    "The base checkpoint and attention features remain fixed; no new model training or inference was performed.",
+    "Regression targets are model predictions, not measured affinities.",
+    "Random candidate folds do not establish generalization to new chemical series or targets.",
+    "DUD-E active/decoy labels retain decoy-selection and property biases; decoys are not experimentally established inactive compounds.",
+    "One set of folds and one shuffled null per task do not characterize uncertainty across repetitions.",
+    "The supervised probes use panel labels for training, whereas the saved model and fingerprint rankings use different information and are not directly comparable."
+  ],
+  "seconds": 41.229
+}

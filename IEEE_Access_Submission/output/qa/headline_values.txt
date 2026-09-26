@@ -1,0 +1,3 @@
+38 of 38 headline values found verbatim in the manuscript
+
+every checked value matches its artifact

@@ -1,0 +1,8 @@
+# Minimal cached-target CPU demonstration, Python 3.10+.
+# ESM-C and visualization libraries are not needed for this entrypoint.
+torch>=2.4
+numpy>=1.26
+pandas>=2.1
+rdkit>=2023.9.4
+safetensors[torch]>=0.4
+tqdm>=4.65

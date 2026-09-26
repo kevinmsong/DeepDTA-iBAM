@@ -1,6 +1,11 @@
 """
 Revision analyses for the J. Cheminform. submission.
 
+ARCHIVE NOTICE: the binding-mode labels in interpretability_meta() are historical
+and unsupported, including the incorrect type II assignment for 4RJ3. Their
+biological interpretation has been withdrawn. Current per-complex reporting
+uses analysis/make_figures_ieee.py with corrected target labels and no mode strata.
+
 Runs four analyses that are not part of the original pipeline and writes the
 LaTeX tables consumed by main.tex:
 
@@ -64,8 +69,8 @@ def interpretability_meta():
     rows = list(csv.DictReader(open(RES + "interpretability_benchmark.csv")))
     notes = {d["pdb_id"]: d for d in json.load(open(DATA + "interpretability_benchmark.json"))}
 
-    # Binding mode assigned from the panel annotations; imatinib (2HYY) and the
-    # annotated DFG-out ligand (4RJ3) are type II, the remainder are type I.
+    # Historical labels only; the 4RJ3 assignment is unsupported. Do not reuse
+    # this archived binding-mode column as a verified biological annotation.
     mode = {"2HYY": "II", "4RJ3": "II", "1KE6": "I", "4WKQ": "I", "6YOJ": "I"}
 
     per = []

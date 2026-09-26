@@ -1,8 +1,15 @@
 # DeepDTA-iBAM
 
-**Interpretable Cross-Attention for Affinity Prediction, Target-Conditioned Retrieval, and Generative Drug Design**
+**DeepDTA-iBAM: Cross-Attention Interaction Mapping for Affinity Prediction, Ligand Retrieval, and Analog Generation**
 
-DeepDTA-iBAM is a multimodal deep learning framework that unifies drug-target affinity (DTA) prediction, interpretable interaction mapping, target-conditioned ligand retrieval, and seeded molecular design within a single architecture. The model combines graph-based ligand encoding, cached ESM-C protein embeddings, and bidirectional atom-residue cross-attention with a diffusion auxiliary head for target-conditioned molecular generation.
+DeepDTA-iBAM is a multimodal deep learning framework that combines drug-target affinity (DTA) prediction, attention-based interaction mapping, target-conditioned ligand retrieval, and seeded molecular design within a single architecture. The model combines graph-based ligand encoding, cached ESM-C protein embeddings, and bidirectional atom-residue cross-attention with a diffusion auxiliary head for target-conditioned molecular generation.
+
+This release includes the [main manuscript and supplement](IEEE_Access_Submission/),
+analysis code and saved results, and a [minimal CPU reference](reference/README.md).
+The reference reuses the production implementation. Original model weights and
+protein caches are not included, and no public download location is provided.
+An explicit untrained demonstration is available without those assets; its
+outputs are not affinity predictions.
 
 ## Architecture
 
@@ -10,7 +17,7 @@ DeepDTA-iBAM has five main components:
 
 1. **Ligand encoder** — Multi-head graph attention over atom-bond graphs with edge-feature bias (78 atom features, 12 bond features)
 2. **Protein adapter** — Learned projection of cached ESM-C residue embeddings into the shared fusion space
-3. **Bidirectional cross-attention** — Atom-to-residue and residue-to-atom attention producing interpretable binding attention maps (iBAM)
+3. **Bidirectional cross-attention**: Atom-to-residue and residue-to-atom attention producing interaction maps; these are not validated physical contacts or causal explanations
 4. **Affinity prediction head** — KIBA score regression from the fused multimodal state
 5. **Diffusion auxiliary head** — Target-conditioned denoising for seeded, topology-preserving molecular design
 
@@ -28,6 +35,31 @@ pip install -r requirements.txt
 **Requirements:** Python 3.10+, PyTorch 2.4+, RDKit, ESM
 
 ## Quick Start
+
+### Minimal reference
+
+```bash
+python -m pip install -r reference/requirements.txt
+python reference/run_demo.py --mode random --output-dir tmp/reference_random
+```
+
+This verifies the full production architecture's tensor flow with random weights
+and synthetic protein embeddings. If the original checkpoint, metadata, and
+protein cache are available locally, run trained inference instead:
+
+```bash
+python reference/run_demo.py --output-dir tmp/reference_trained
+```
+
+The default target is the shortest cached sequence, not necessarily EGFR.
+See [reference/README.md](reference/README.md) for target selection, required
+assets, output formats, and the distinction between trained and untrained modes.
+
+### Full research workflow
+
+The following commands require the broader dependencies and external data.
+Training produces new weights; it does not recover the original checkpoint's
+missing training history or guarantee the published numerical results.
 
 ### 1. Download and parse KIBA data
 
@@ -94,6 +126,8 @@ DeepDTA-iBAM/
 ├── reproduce_all.py                      # Full reproducibility orchestrator
 ├── aggregate_ablations.py                # Ablation result aggregation
 ├── requirements.txt                      # Python dependencies
+├── reference/                            # Minimal CPU entrypoint and asset documentation
+├── IEEE_Access_Submission/                # Current manuscript, supplement, and supporting sources
 ├── models/
 │   └── rmse_model.py                     # DeepDTA-iBAM architecture
 ├── training/
@@ -110,7 +144,7 @@ DeepDTA-iBAM/
 ├── tests/                                # Test suite
 ├── analysis/                             # Reproduces every reported statistic
 │   ├── analysis_revision.py              # Meta-analysis, panel separation, ablation and generator tests
-│   ├── analysis_mixed_effects.py         # Residue-level mixed-effects model, permutation bound
+│   ├── revalidate_contact_probes.py      # Nested ridge and fold-local descriptor adjustment
 │   ├── export_residue_level.py           # Per-residue attention and contact export
 │   ├── analysis_power.py                 # Power derivation for the localization panel
 │   ├── audit_generated_set.py            # Analog-set audit and scaffold diversity
@@ -118,7 +152,7 @@ DeepDTA-iBAM/
 │   ├── score_kinase_panel.py             # Model and fingerprint scoring of that panel
 │   ├── analysis_literature_audit.py      # Audit of reporting practice in published work
 │   ├── literature_audit.csv              # Per-paper verdicts with PMC identifiers
-│   └── make_tables.py / make_figures.py  # Typeset outputs
+│   └── make_figures_ieee.py             # Current manuscript figures
 └── results/                              # Derived artifacts
     ├── fig*.pdf / fig*.png               # Figures (vector where available)
     ├── interpretability_benchmark.csv    # Per-complex localization metrics
@@ -130,27 +164,25 @@ DeepDTA-iBAM/
     └── source_manifest.json              # Provenance tracking
 ```
 
-Manuscript sources are not part of this repository. The `analysis/` scripts
-resolve paths relative to their own location, so they run from a clean clone
-without arguments:
+The current manuscript sources are in `IEEE_Access_Submission/`. Analysis scripts
+resolve paths relative to their own location. Their required inputs must be
+present; some audits use external checkpoint, structure, or cache assets:
 
 ```bash
 # Benchmarks and statistics
 python analysis/analysis_benchmark_metrics.py    # KIBA regression and classification metrics
-python analysis/analysis_revision.py             # meta-analysis, panel separation, generator tests
-python analysis/analysis_mixed_effects.py        # residue-level GLMM, exact permutation bound
-python analysis/analysis_power.py                # power derivation for the localization panel
+python analysis/analysis_power.py                # conditional panel-level power; stratified fields are withdrawn
 python analysis/analysis_overlap_chance.py       # chance-referenced top-k contact overlap
-python analysis/analysis_contact_information.py  # what the interaction maps encode
+python analysis/revalidate_contact_probes.py      # current nested/fold-local probe validation
 python analysis/analysis_attention_ablation.py   # inference-time ablation of the fusion gates
 python analysis/analysis_efficiency.py           # CPU latency, throughput and parameter profile
-python analysis/analysis_assay_type_hierarchy.py # sensitivity to the activity consolidation rule
-python analysis/analysis_docking_retrieval.py    # retrieval against Vina and a fingerprint baseline
+python analysis/revalidate_egfr_curation.py       # curation counts, property ranges, and hierarchy sensitivity
+python analysis/revalidate_docking_aggregation.py # tie-aware retrieval metrics from saved docking scores
 python analysis/analysis_literature_audit.py     # reporting practice in published work
 python analysis/audit_generated_set.py           # analog-set audit and scaffold diversity
 
 # Figures and manuscript checks
-python analysis/make_figures_ieee.py             # six main-text figures, 600 dpi PDF + PNG
+python analysis/make_figures_ieee.py             # current main-text figures, 600 dpi PDF + PNG
 python analysis/make_figure_ibam_map.py          # the interaction-map figure
 python analysis/make_figure_generation.py        # the analog-generation figure
 python analysis/make_figure_residuals.py         # supplementary residual diagnostics
@@ -161,9 +193,19 @@ python analysis/audit_captions.py <manuscript.tex>
 python analysis/wordcount_tex.py <manuscript.tex>
 ```
 
-Two scripts additionally require the model checkpoint and cached embeddings,
-which are not redistributed: `export_residue_level.py` regenerates the
-residue-level export, and `score_kinase_panel.py` rescores the in-domain panel.
+The original `analysis_contact_information.py` is retained only to reproduce
+exploratory estimates with non-nested penalty selection and full-panel
+residualization. Use `revalidate_contact_probes.py` for current estimates.
+The binding-mode analyses in `analysis_mixed_effects.py`, the legacy forest
+plot in `make_figures.py`, and mode annotations in `analysis_revision.py` were
+withdrawn because 4RJ3 was mislabeled. They are not current biological evidence.
+
+Scripts that run model inference require the checkpoint and cached embeddings,
+which are not redistributed. These include `export_residue_level.py`,
+`score_kinase_panel.py`, `analysis_attention_ablation.py`,
+`analysis_efficiency.py`, and `audit_checkpoint_provenance.py`.
+`export_residue_level.py` regenerates residue-level maps, and
+`score_kinase_panel.py` rescores the in-domain panel.
 `export_panel_attention.py` regenerates `results/panel_attention_residue.npy`,
 the 3,300 x 1,210 attention profile matrix, which is released here so the
 interaction-map analysis can be rerun without a GPU.
@@ -173,9 +215,11 @@ atom-by-residue interaction map per complex to `results/ibam_matrix_{pdb_id}.npz
 which is what the interaction-map figure is drawn from. That script is
 deterministic within one environment but not across them: rerunning the released
 checkpoint on a CPU workstation reproduces the released per-residue attention to
-1.1e-3, which moves per-complex contact AUROC by at most 0.0016 and leaves every
-value the manuscript reports at three decimals unchanged. The released CSV is
-kept as the artifact of record.
+approximately 1.1e-3 in absolute attention weight. The 1KE6 revalidation records
+residue AUROC 0.6056 versus archived 0.6042. The manuscript retains the archived
+residue results and separately reports the corrected graph-order atom AUROC.
+See `results/atom_contacts_revalidated.*`; results from different runs should
+not be silently substituted.
 
 Scripts that run inference size their batch from the longest target sequence
 and the memory available, via `analysis/memory_guard.py`, because memory is
@@ -193,7 +237,7 @@ and the search box are released:
 python analysis/prep_docking_receptor.py   # writes results/docking/receptor_4wkq.pdbqt
                                            # and results/docking/docking_box.json
 python analysis/analysis_docking_baseline.py --all-actives --decoy-limit 460 --workers 14
-python analysis/analysis_docking_retrieval.py
+python analysis/revalidate_docking_aggregation.py
 ```
 
 Vina regenerates its grid maps from the receptor and box on each run; the maps
@@ -215,7 +259,15 @@ Defined in [`config_profiles.py`](config_profiles.py):
 
 ## Data
 
-The repository expects KIBA CSV files in `data/raw/`. Raw data, cached embeddings, model checkpoints, and the ZINC archive are not included in this repository due to size constraints. They can be obtained or regenerated using the documented workflow above.
+The full workflow expects KIBA CSV files in `data/raw/`. Raw KIBA data, cached
+embeddings, model checkpoints, and the ZINC archive are not included. The
+preprocessing scripts build new caches from available source data. Original
+trained weights have no public download link here; training new weights is not
+equivalent to reproducing the audited checkpoint. The saved numerical artifacts
+and targeted revalidation reports document what can be checked without retraining.
+Audit file hashes identify the local input bytes used in each run. Git may
+normalize line endings in historical CSV files across platforms; the validation
+scripts check parsed records and numerical values as well as recording hashes.
 
 ## Testing
 
@@ -229,14 +281,14 @@ If you use DeepDTA-iBAM in your research, please cite:
 
 ```bibtex
 @article{song2026deepdta_ibam,
-  title   = {DeepDTA-iBAM: Interpretable Cross-Attention for Affinity Prediction, Target-Conditioned Retrieval, and Generative Drug Design},
-  author  = {Song, Kevin M.},
+  title   = {DeepDTA-iBAM: Cross-Attention Interaction Mapping for Affinity Prediction, Ligand Retrieval, and Analog Generation},
+  author  = {Song, Kevin and Zhang, John and Ye, Lei and Zhang, Jianyi},
   year    = {2026},
   note    = {Manuscript in preparation}
 }
 ```
 
-## Acknowledgements
+## Acknowledgments
 
 This study was supported in part by the National Heart, Lung, and Blood Institute under grant numbers U01HL134764, P01 HL160476, R01HL131017, and R01HL149137.
 
@@ -244,4 +296,6 @@ The authors acknowledge the University of Alabama at Birmingham IT Research Comp
 
 ## License
 
-[MIT License](LICENSE)
+[MIT License](LICENSE) for the project software. The official IEEE template
+assets retain their original ownership and terms; see
+[template provenance](IEEE_Access_Submission/TEMPLATE_SOURCE.md).

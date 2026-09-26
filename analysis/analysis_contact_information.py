@@ -1,41 +1,34 @@
-"""Do the model's interaction maps carry ligand-specific, affinity-relevant information?
+"""Archived exploratory analysis of ligand-specific information in EGFR maps.
 
-A reviewer raised two objections to the structural-localization analysis.  First,
-crystallographic contacts exist only for compounds that bind, so a contact
-benchmark scored against a crystal pose can never include a non-binder, and the
-question of whether a non-binder's map looks different is never asked.  Second,
-if the maps really add interpretability to the affinity prediction, it should be
-possible to model affinity as a function of the contacts, ideally linearly.
+Current probe estimates are produced by revalidate_contact_probes.py and saved
+in results/contact_information_revalidated.json. That script uses nested
+cross-validation for ridge penalty selection and fits descriptor residualization
+inside each outer training fold. This original script is retained to reproduce
+the archived estimates; running it overwrites contact_information_summary.json.
 
-This script answers both on the in-domain EGFR panel, where the protein is held
-fixed and the ligand varies across 300 assay-defined actives and 3,000
-property-matched decoys.  Every candidate has a predicted interaction profile
-whether or not it binds, which is exactly what the crystal-pose benchmark cannot
-supply.
+The panel contains 300 assay-defined actives and 3,000 property-matched DUD-E
+decoys against one fixed target. Decoys are presumed inactive, not experimentally
+confirmed nonbinders. Attention profiles are model outputs, not measured contacts.
 
-Three analyses:
+Three analyses are retained:
 
-1.  Ligand invariance.  A two-way variance decomposition of the ligand-by-residue
-    attention matrix into a residue main effect (the component fixed by the
-    target), a ligand main effect, and the ligand-by-residue interaction (the
-    only component that can carry ligand-specific information), plus the
-    distribution of each profile's correlation with the panel mean profile.
-    If the interaction term is negligible, the maps describe the pocket rather
-    than the interaction and no downstream model can extract affinity from them.
+1. Descriptive variance decomposition and correlations among ligand profiles.
+   The residue main effect describes the panel-mean profile at this fixed target;
+   it does not establish that the target alone determines those values.
+2. Ridge regression to the model's predicted affinity, not measured affinity.
+   The best penalty is selected on the same five folds used for reporting, so
+   the archived R2 is subject to selection optimism.
+3. Fixed-penalty logistic probes for active/decoy labels, using stratified
+   five-fold cross-validation with training-fold scaling. This is not nested
+   cross-validation. The original descriptor residualization uses the full panel
+   before cross-validation, so that estimate is exploratory. Residualization
+   removes linear descriptor associations, not every possible property effect.
 
-2.  Affinity as a linear function of the map.  Ridge regression from the residue
-    profile to affinity, cross-validated, against a label-shuffled null.
+Consumes exports from export_panel_attention.py. DUD-E decoy bias and chemical
+dependence within random candidate folds limit interpretation of all probes.
 
-3.  Binder versus non-binder separation.  Ridge-regularised logistic regression
-    from the same profile to the active/decoy label, nested cross-validation,
-    against a physicochemical-descriptor control and a label-shuffled null.
-    The descriptor control matters because actives and decoys can differ on
-    trivial properties, and a classifier that only recovers those differences
-    has learned nothing about the interaction.
-
-Consumes the exports written by export_panel_attention.py.
-
-Run from anywhere:  python analysis/analysis_contact_information.py
+Current validation: python analysis/revalidate_contact_probes.py
+Archived analysis:  python analysis/analysis_contact_information.py
 """
 
 from __future__ import annotations

@@ -76,9 +76,9 @@ CLUSTER_SETUP.md
 run_slurm.sh
 setup_supercomputer.sh
 
-# Manuscript and supplementary (not part of the code release)
+# Archived manuscript sources; active IEEE Access release is allowlisted below.
 J_Cheminform_Submission/
-IEEE_Access_Submission/
+/IEEE_Access_Submission/*
 *.tex
 *.bib
 !analysis/**/*.py
@@ -128,3 +128,51 @@ results/generation_cache/
 
 # Local scratch
 tmp/
+
+# Active IEEE Access manuscript and the unchanged official template assets.
+!/IEEE_Access_Submission/README.md
+!/IEEE_Access_Submission/TEMPLATE_SOURCE.md
+!/IEEE_Access_Submission/template_assets.json
+!/IEEE_Access_Submission/main.tex
+!/IEEE_Access_Submission/supplementary.tex
+!/IEEE_Access_Submission/combined.tex
+!/IEEE_Access_Submission/references.bib
+!/IEEE_Access_Submission/ieeeaccess.cls
+!/IEEE_Access_Submission/IEEEtran.cls
+!/IEEE_Access_Submission/IEEEtran.bst
+!/IEEE_Access_Submission/spotcolor.sty
+!/IEEE_Access_Submission/*.fd
+!/IEEE_Access_Submission/*.map
+!/IEEE_Access_Submission/*.pfb
+!/IEEE_Access_Submission/*.tfm
+!/IEEE_Access_Submission/logo.png
+!/IEEE_Access_Submission/notaglinelogo.png
+!/IEEE_Access_Submission/bullet.png
+!/IEEE_Access_Submission/table_s_standard_eval_bootstrap.tex
+!/IEEE_Access_Submission/table_s_egfr_retrieval_metrics_full.tex
+!/IEEE_Access_Submission/table_s_top_egfr_retrieval_hits.tex
+!/IEEE_Access_Submission/table_s_interpretability_per_complex.tex
+!/IEEE_Access_Submission/table_generated_audit.tex
+!/IEEE_Access_Submission/table_generated_top10.tex
+!/IEEE_Access_Submission/table_power.tex
+!/IEEE_Access_Submission/table_literature_audit.tex
+!/results/table_benchmark_metrics_expanded.tex
+!/results/docking_revalidated/table_docking_retrieval.tex
+
+# Final submission deliverables; render intermediates remain local.
+!/IEEE_Access_Submission/output/
+/IEEE_Access_Submission/output/*
+!/IEEE_Access_Submission/output/pdf/
+/IEEE_Access_Submission/output/pdf/*
+!/IEEE_Access_Submission/output/pdf/main.pdf
+!/IEEE_Access_Submission/output/pdf/supplementary.pdf
+!/IEEE_Access_Submission/output/pdf/combined.pdf
+!/IEEE_Access_Submission/output/figures_600dpi.zip
+!/IEEE_Access_Submission/output/ieee_submission_source.zip
+!/IEEE_Access_Submission/output/ieee_submission_source_repo_layout.zip
+!/IEEE_Access_Submission/output/qa/
+/IEEE_Access_Submission/output/qa/*
+!/IEEE_Access_Submission/output/qa/validation.json
+!/IEEE_Access_Submission/output/qa/visual_review.md
+!/IEEE_Access_Submission/output/qa/headline_values.txt
+!/IEEE_Access_Submission/output/qa/colorblind_screen.txt

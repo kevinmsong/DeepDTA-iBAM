@@ -66,6 +66,11 @@ def main() -> None:
 
     # --- overlap / saturation -------------------------------------------
     ov = load_json("overlap_chance_summary.json")
+    atom_audit = load_json("atom_contacts_revalidated.json")
+    if atom_audit:
+        panels = atom_audit["panel_results_over_all_distinct_label_assignments"]
+        assert len(panels) == 1, "Atom mapping gives ambiguous panel estimates"
+        ov = panels[0]
     if ov:
         checks.append(("atom overlap mean", f"{ov['atom_overlap_mean']:.3f}",
                        True, f"{ov['atom_overlap_mean']:.3f}" in tex))
@@ -75,6 +80,10 @@ def main() -> None:
     # --- interaction maps ------------------------------------------------
     ci = load_json("contact_information_summary.json")
     if ci:
+        validated = load_json("contact_information_revalidated.json")
+        if validated:
+            ci["classification"] = validated["classification"]
+            ci["affinity_regression"] = validated["affinity_regression"]
         vd = ci["variance_decomposition"]
         checks.append(("residue main effect %",
                        f"{100*vd['frac_residue_main_effect']:.1f}",
@@ -86,7 +95,8 @@ def main() -> None:
         for label, key in [("probe AUROC", "auroc_from_attention_profile"),
                            ("descriptor AUROC", "auroc_from_descriptors"),
                            ("model score AUROC", "auroc_model_score"),
-                           ("ECFP AUROC", "auroc_ecfp_baseline")]:
+                           ("ECFP AUROC", "auroc_ecfp_baseline"),
+                           ("residualized profile AUROC", "auroc_from_profile_residualised_on_descriptors")]:
             v = f"{cl[key]:.3f}"
             checks.append((label, v, True, v in tex))
         r2 = f"{ci['affinity_regression']['r2_from_attention_profile']:.3f}"
@@ -146,7 +156,7 @@ def main() -> None:
             checks.append((label, v, True, v in tex or str(ah[key]) in tex))
 
     # --- docking ----------------------------------------------------------
-    dk = load_json("docking_retrieval_summary.json")
+    dk = load_json("docking_revalidated/docking_retrieval_summary.json")
     if dk:
         for label, key in [("Vina AUROC", "vina"), ("model AUROC", "deepdta_ibam"),
                            ("ECFP AUROC", "ecfp_nearest_active")]:

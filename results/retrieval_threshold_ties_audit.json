@@ -1,0 +1,319 @@
+{
+  "scope": "Audit saved DUD-E scores and H1 fingerprint scores reconstructed deterministically from archived library structures; no bootstrap, docking, or model inference.",
+  "inputs": {
+    "dude_egfr_panel_scored.csv": "edda97bc5746dc5016f4fdef096b4402a59ee9853edfffe46887d828af920cbb",
+    "zinc_mixed_library_replicates.csv": "232f455f457bf87e4239efafa074022a6e1033d4f7f5b4c647e0a0c0fa528b9a",
+    "h1_active_library.csv": "db9364732ac6db1176cdd1b1950425ea312e8b58f9cda041d388d7150f5d1d32",
+    "h1_drug_fishing_replicate_metrics.csv": "4b5fcc835dd4fcf1d1935137d21f52271f7ee2f3301157dac260a48ea93f11a4"
+  },
+  "dude_egfr": {
+    "fingerprint": {
+      "n_candidates": 3300,
+      "n_actives": 300,
+      "cutoff_fraction": 0.1,
+      "cutoff_count": 330,
+      "score_column": "ecfp_score",
+      "boundary_score": 0.247525,
+      "n_strictly_above": 329,
+      "actives_strictly_above": 291,
+      "boundary_tie_size": 1,
+      "actives_in_boundary_tie": 0,
+      "tie_straddles_cutoff": false,
+      "mixed_labels_in_boundary_tie": false,
+      "mixed_tie_straddles_cutoff": false,
+      "expected_active_count_with_tie_averaging": 291.0,
+      "published_active_count": 291,
+      "published_value_unchanged": true,
+      "boundary_records": [
+        {
+          "ident": "C06964839",
+          "label": 0,
+          "ecfp_score": 0.247525
+        }
+      ]
+    },
+    "model": {
+      "n_candidates": 3300,
+      "n_actives": 300,
+      "cutoff_fraction": 0.1,
+      "cutoff_count": 330,
+      "score_column": "model_score",
+      "boundary_score": 12.00475,
+      "n_strictly_above": 329,
+      "actives_strictly_above": 181,
+      "boundary_tie_size": 1,
+      "actives_in_boundary_tie": 1,
+      "tie_straddles_cutoff": false,
+      "mixed_labels_in_boundary_tie": false,
+      "mixed_tie_straddles_cutoff": false,
+      "expected_active_count_with_tie_averaging": 182.0,
+      "published_active_count": 182,
+      "published_value_unchanged": true,
+      "boundary_records": [
+        {
+          "ident": "CHEMBL173498",
+          "label": 1,
+          "model_score": 12.00475
+        }
+      ]
+    }
+  },
+  "h1": {
+    "status": "Deterministic fingerprint scores reconstructed from saved library structures; no model inference.",
+    "rdkit_version": "2025.09.3",
+    "settings": {
+      "fingerprint": "Morgan bit fingerprint",
+      "radius": 2,
+      "fpSize": 2048,
+      "includeChirality": false,
+      "reference": "20 saved H1 actives; maximum Tanimoto; self-reference excluded by exact SMILES, matching original implementation"
+    },
+    "references": [
+      {
+        "molecule_chembl_id": "CHEMBL564226",
+        "smiles": "C[C@H](C1=C(CCN(C)C)Cc2ccccc21)c1ccccn1"
+      },
+      {
+        "molecule_chembl_id": "CHEMBL285802",
+        "smiles": "CN(C)CCOC1=Cc2ccccc2Sc2ccc(Cl)cc21"
+      },
+      {
+        "molecule_chembl_id": "CHEMBL22108",
+        "smiles": "CC(C1=C(CCN(C)C)Cc2ccccc21)c1ccccn1"
+      },
+      {
+        "molecule_chembl_id": "CHEMBL1172",
+        "smiles": "Clc1ccc2c(c1)CCc1cccnc1C2=C1CCNCC1"
+      },
+      {
+        "molecule_chembl_id": "CHEMBL1633",
+        "smiles": "CN1CCC(=C2c3ccccc3CC(=O)c3sccc32)CC1.O=C(O)/C=C/C(=O)O"
+      },
+      {
+        "molecule_chembl_id": "CHEMBL42",
+        "smiles": "CN1CCN(C2=Nc3cc(Cl)ccc3Nc3ccccc32)CC1"
+      },
+      {
+        "molecule_chembl_id": "CHEMBL629",
+        "smiles": "CN(C)CCC=C1c2ccccc2CCc2ccccc21"
+      },
+      {
+        "molecule_chembl_id": "CHEMBL715",
+        "smiles": "Cc1cc2c(s1)Nc1ccccc1N=C2N1CCN(C)CC1"
+      },
+      {
+        "molecule_chembl_id": "CHEMBL511",
+        "smiles": "COc1ccc(CN(CCN(C)C)c2ccccn2)cc1"
+      },
+      {
+        "molecule_chembl_id": "CHEMBL855",
+        "smiles": "Cc1ccc(/C(=C\\CN2CCCC2)c2ccccn2)cc1"
+      },
+      {
+        "molecule_chembl_id": "CHEMBL654",
+        "smiles": "CN1CCN2c3ncccc3Cc3ccccc3C2C1"
+      },
+      {
+        "molecule_chembl_id": "CHEMBL296419",
+        "smiles": "COc1ccc(CCN2CCC(Nc3nc4ccccc4n3Cc3ccc(F)cc3)CC2)cc1"
+      },
+      {
+        "molecule_chembl_id": "CHEMBL91397",
+        "smiles": "Cc1cncc(CN2CCC(=C3c4ccc(Cl)cc4CCc4cccnc43)CC2)c1"
+      },
+      {
+        "molecule_chembl_id": "CHEMBL1000",
+        "smiles": "O=C(O)COCCN1CCN(C(c2ccccc2)c2ccc(Cl)cc2)CC1"
+      },
+      {
+        "molecule_chembl_id": "CHEMBL914",
+        "smiles": "CC(C)(C(=O)O)c1ccc(C(O)CCCN2CCC(C(O)(c3ccccc3)c3ccccc3)CC2)cc1"
+      },
+      {
+        "molecule_chembl_id": "CHEMBL998",
+        "smiles": "CCOC(=O)N1CCC(=C2c3ccc(Cl)cc3CCc3cccnc32)CC1"
+      },
+      {
+        "molecule_chembl_id": "CHEMBL1241",
+        "smiles": "CN(C)CCN(Cc1ccccc1)c1ccccn1"
+      },
+      {
+        "molecule_chembl_id": "CHEMBL17157",
+        "smiles": "CC(C)(C)c1ccc(C(O)CCCN2CCC(C(O)(c3ccccc3)c3ccccc3)CC2)cc1"
+      },
+      {
+        "molecule_chembl_id": "CHEMBL1201190",
+        "smiles": "Cl.Cl.O=C(O)COCCN1CCN([C@H](c2ccccc2)c2ccc(Cl)cc2)CC1"
+      },
+      {
+        "molecule_chembl_id": "CHEMBL505",
+        "smiles": "CN(C)CCC(c1ccc(Cl)cc1)c1ccccn1"
+      }
+    ],
+    "n_library_rows": 50000,
+    "n_unique_smiles_scored": 49799,
+    "replicates": [
+      {
+        "replicate": 1,
+        "cutoff_fraction": 0.01,
+        "cutoff_count": 100,
+        "boundary_score": 0.24242424242424243,
+        "n_strictly_above": 99,
+        "actives_strictly_above": 17,
+        "boundary_tie_size": 4,
+        "actives_in_boundary_tie": 0,
+        "tie_straddles_cutoff": true,
+        "mixed_labels_in_boundary_tie": false,
+        "mixed_tie_straddles_cutoff": false,
+        "expected_active_count_with_tie_averaging": 17.0,
+        "published_active_count": 17.0,
+        "published_value_unchanged": true
+      },
+      {
+        "replicate": 1,
+        "cutoff_fraction": 0.05,
+        "cutoff_count": 500,
+        "boundary_score": 0.20481927710843373,
+        "n_strictly_above": 491,
+        "actives_strictly_above": 20,
+        "boundary_tie_size": 17,
+        "actives_in_boundary_tie": 0,
+        "tie_straddles_cutoff": true,
+        "mixed_labels_in_boundary_tie": false,
+        "mixed_tie_straddles_cutoff": false,
+        "expected_active_count_with_tie_averaging": 20.0,
+        "published_active_count": 20.0,
+        "published_value_unchanged": true
+      },
+      {
+        "replicate": 2,
+        "cutoff_fraction": 0.01,
+        "cutoff_count": 100,
+        "boundary_score": 0.24358974358974358,
+        "n_strictly_above": 98,
+        "actives_strictly_above": 17,
+        "boundary_tie_size": 3,
+        "actives_in_boundary_tie": 0,
+        "tie_straddles_cutoff": true,
+        "mixed_labels_in_boundary_tie": false,
+        "mixed_tie_straddles_cutoff": false,
+        "expected_active_count_with_tie_averaging": 17.0,
+        "published_active_count": 17.0,
+        "published_value_unchanged": true
+      },
+      {
+        "replicate": 2,
+        "cutoff_fraction": 0.05,
+        "cutoff_count": 500,
+        "boundary_score": 0.20689655172413793,
+        "n_strictly_above": 499,
+        "actives_strictly_above": 20,
+        "boundary_tie_size": 7,
+        "actives_in_boundary_tie": 0,
+        "tie_straddles_cutoff": true,
+        "mixed_labels_in_boundary_tie": false,
+        "mixed_tie_straddles_cutoff": false,
+        "expected_active_count_with_tie_averaging": 20.0,
+        "published_active_count": 20.0,
+        "published_value_unchanged": true
+      },
+      {
+        "replicate": 3,
+        "cutoff_fraction": 0.01,
+        "cutoff_count": 100,
+        "boundary_score": 0.24050632911392406,
+        "n_strictly_above": 99,
+        "actives_strictly_above": 17,
+        "boundary_tie_size": 5,
+        "actives_in_boundary_tie": 0,
+        "tie_straddles_cutoff": true,
+        "mixed_labels_in_boundary_tie": false,
+        "mixed_tie_straddles_cutoff": false,
+        "expected_active_count_with_tie_averaging": 17.0,
+        "published_active_count": 17.0,
+        "published_value_unchanged": true
+      },
+      {
+        "replicate": 3,
+        "cutoff_fraction": 0.05,
+        "cutoff_count": 500,
+        "boundary_score": 0.20481927710843373,
+        "n_strictly_above": 496,
+        "actives_strictly_above": 20,
+        "boundary_tie_size": 27,
+        "actives_in_boundary_tie": 0,
+        "tie_straddles_cutoff": true,
+        "mixed_labels_in_boundary_tie": false,
+        "mixed_tie_straddles_cutoff": false,
+        "expected_active_count_with_tie_averaging": 20.0,
+        "published_active_count": 20.0,
+        "published_value_unchanged": true
+      },
+      {
+        "replicate": 4,
+        "cutoff_fraction": 0.01,
+        "cutoff_count": 100,
+        "boundary_score": 0.24691358024691357,
+        "n_strictly_above": 99,
+        "actives_strictly_above": 17,
+        "boundary_tie_size": 1,
+        "actives_in_boundary_tie": 0,
+        "tie_straddles_cutoff": false,
+        "mixed_labels_in_boundary_tie": false,
+        "mixed_tie_straddles_cutoff": false,
+        "expected_active_count_with_tie_averaging": 17.0,
+        "published_active_count": 17.0,
+        "published_value_unchanged": true
+      },
+      {
+        "replicate": 4,
+        "cutoff_fraction": 0.05,
+        "cutoff_count": 500,
+        "boundary_score": 0.20454545454545456,
+        "n_strictly_above": 499,
+        "actives_strictly_above": 20,
+        "boundary_tie_size": 8,
+        "actives_in_boundary_tie": 0,
+        "tie_straddles_cutoff": true,
+        "mixed_labels_in_boundary_tie": false,
+        "mixed_tie_straddles_cutoff": false,
+        "expected_active_count_with_tie_averaging": 20.0,
+        "published_active_count": 20.0,
+        "published_value_unchanged": true
+      },
+      {
+        "replicate": 5,
+        "cutoff_fraction": 0.01,
+        "cutoff_count": 100,
+        "boundary_score": 0.2361111111111111,
+        "n_strictly_above": 97,
+        "actives_strictly_above": 17,
+        "boundary_tie_size": 4,
+        "actives_in_boundary_tie": 0,
+        "tie_straddles_cutoff": true,
+        "mixed_labels_in_boundary_tie": false,
+        "mixed_tie_straddles_cutoff": false,
+        "expected_active_count_with_tie_averaging": 17.0,
+        "published_active_count": 17.0,
+        "published_value_unchanged": true
+      },
+      {
+        "replicate": 5,
+        "cutoff_fraction": 0.05,
+        "cutoff_count": 500,
+        "boundary_score": 0.2,
+        "n_strictly_above": 481,
+        "actives_strictly_above": 20,
+        "boundary_tie_size": 66,
+        "actives_in_boundary_tie": 0,
+        "tie_straddles_cutoff": true,
+        "mixed_labels_in_boundary_tie": false,
+        "mixed_tie_straddles_cutoff": false,
+        "expected_active_count_with_tie_averaging": 20.0,
+        "published_active_count": 20.0,
+        "published_value_unchanged": true
+      }
+    ]
+  },
+  "all_published_boundary_recoveries_unchanged": true
+}

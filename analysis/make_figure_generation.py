@@ -85,9 +85,9 @@ def main() -> None:
     ax_a.set_xlim(0, 1.06)
     ax_a.set_ylim(2.55, -0.75)
     ax_a.set_xlabel("ECFP similarity to the seed")
-    ax_a.set_title("(a) How far each generator moves", fontsize=7.5)
+    ax_a.set_title("(a) Similarity to the seed", fontsize=7.5)
     ax_a.annotate("seed returned\nin its own output", xy=(1.0, 0.0),
-                  xytext=(0.46, -0.46), fontsize=6.5, ha="center",
+                  xytext=(0.46, -0.46), fontsize=7.0, ha="center",
                   arrowprops=dict(arrowstyle="->", linewidth=0.6,
                                   color=COLORS["grey"]))
     for s in ("top", "right", "left"):
@@ -107,11 +107,11 @@ def main() -> None:
               zorder=4)
     ax_b.set_xlabel("Synthetic accessibility (lower is easier)")
     ax_b.set_ylabel("QED (higher is more drug-like)")
-    ax_b.set_title("(b) The price of moving further", fontsize=7.5)
+    ax_b.set_title("(b) Drug-likeness and accessibility", fontsize=7.5)
     ax_b.spines["top"].set_visible(False)
     ax_b.spines["right"].set_visible(False)
     ax_b.grid(linewidth=0.4, alpha=0.5)
-    ax_b.legend(fontsize=6.5, frameon=False, loc="lower left",
+    ax_b.legend(fontsize=7.0, frameon=False, loc="upper right",
                 handletextpad=0.2, borderpad=0.15, labelspacing=0.25)
 
     # --- (c) the diversity audit ------------------------------------------
@@ -125,17 +125,17 @@ def main() -> None:
                         zorder=2)
         for b, v in zip(bars, vals):
             ax_c.text(b.get_x() + b.get_width() / 2, v + 2.5, str(v),
-                      ha="center", va="bottom", fontsize=6.5)
+                      ha="center", va="bottom", fontsize=7.0)
     ax_c.set_xticks(x)
     ax_c.set_xticklabels(STAGES)
     ax_c.set_ylim(0, 152)
     ax_c.set_ylabel("Distinct structures")
-    ax_c.set_title("(c) Diversity depends on how you count", fontsize=7.5)
+    ax_c.set_title("(c) Structural diversity", fontsize=7.5)
     ax_c.spines["top"].set_visible(False)
     ax_c.spines["right"].set_visible(False)
     ax_c.grid(axis="y", linewidth=0.4, alpha=0.5)
     ax_c.grid(axis="x", visible=False)
-    ax_c.legend(fontsize=6.5, frameon=False, loc="upper right",
+    ax_c.legend(fontsize=7.0, frameon=False, loc="upper right",
                 handlelength=1.1, handletextpad=0.3, borderpad=0.15,
                 labelspacing=0.25)
 

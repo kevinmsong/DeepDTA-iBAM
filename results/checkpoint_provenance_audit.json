@@ -1,0 +1,131 @@
+{
+  "audit_scope": "Existing artifacts and a deterministic 24-pair fresh CPU inference check; no retraining",
+  "input_sha256": {
+    "checkpoints/max_rmse_cluster_diffusion_member_0.safetensors": "369be983160a49950c44ba9fcfe2334a8fd0a3c5ab084a27aff3f38aad203213",
+    "checkpoints/max_rmse_cluster_diffusion_member_0.json": "c75e832eeeb092e4287fd7ef0a2b7061518a6e397494cfc1e3016cc26a44c40e",
+    "checkpoints/max_rmse_cluster_diffusion_member_0_optimizers.pt": "d2d7800148191244c7709f34f5368172202d0ce70b91c8919d1f18335c562696",
+    "checkpoints/max_rmse_cluster_diffusion_training_summary.json": "78d04260139a60578857e15ced7eb72ddfe699af140ad3504ddd935d773ae5cf",
+    "results/max_rmse_cluster_diffusion_member1_standard_predictions.csv": "84eba2ee639d02d0666ad7f88872a12cdec3bc6f0f1bad06811f42779b1d4d88",
+    "data/raw/test_kiba.csv": "d5b4192346a09b87a93e0c2e8391745c0012b6b5ac30cb5c01d313f0bb29d893",
+    "data/raw/train_kiba.csv": "773e8e5c5a1ccbb4ab656cf915a0cb51257797e45bbd95bb09b55e9c45d5d929",
+    "data/cache/graphs.pt": "13f29c7dc4af84fa4c60a5b8a3e954b4d651a460aa097af9a3cd94783917c352",
+    "data/cache/proteins.pt": "e7c94f5a9fb875c354c5745dba4bfcc2697247b75722b28c410c1f1403bd00ca",
+    "data/cache/graphs_manifest.json": "d2d33e8aa151b321a640ff0028787cad2cab413c2be93bb94df3691f0e7f3849",
+    "data/cache/proteins_manifest.json": "2c185314340b74a32151069766b6e0d7e097ec0f0d72d4d5b65879daa85e983a",
+    "results/attention_ablation_predictions.csv": "5436d91fc39ec23c3150f511c046361b61249dd58c8fd8f5944111a08c8ebdc3",
+    "results/cache/attention_ablation/attention_ablation_graphs.pt": "eebe3af3052778b80e967f7bc1f616ddd2ec15d3bde07c3120f7fd4de257f644",
+    "results/cache/attention_ablation/attention_ablation_graphs_manifest.json": "889b8d687bd18a9bb3b2ef41b58f9c51e89b6d5b77eb1a4aef6ccb07b2d75ee2",
+    "results/cache/attention_ablation/attention_ablation_proteins.pt": "58de8e931e637109e8de7b3fe133a7b1132ee59e318a73cdca2641a903a4af13",
+    "results/cache/attention_ablation/attention_ablation_proteins_manifest.json": "b4ef4e0bd19e6cf5162704382d5c16b60ee20fc6f208aecd11264b8d967b4f96"
+  },
+  "checkpoint_tensor_count": 237,
+  "safetensors_embedded_metadata": null,
+  "sidecar_metadata": {
+    "cache_hash": "e87bafa2a85328b07751970595ee4026156815d4cdfb11bc391606bbf41b386c",
+    "config_hash": "1a0f125229eeb467c34f78a4ef731cee4723ba23092247db482e99dc4475edd6",
+    "epoch": 47,
+    "member_index": 0,
+    "member_seed": 1337,
+    "metrics": {
+      "AttentionCollapseFrac": 0.26272619651615087,
+      "AttentionCollapseWarn": 0.0,
+      "AttentionEntropy": 0.4315554360314709,
+      "AttentionMaxWeight": 0.4733067544854338,
+      "CI": 0.8677980496316176,
+      "MAE": 0.29837962703295173,
+      "Pearson": 0.8673894395311538,
+      "R2": 0.6893510622376657,
+      "RMSE": 0.4733637314601481
+    },
+    "profile_name": "max_rmse_cluster_diffusion",
+    "target_mean": 11.718813774886861,
+    "target_std": 0.8365401520213682
+  },
+  "optimizer_metadata_matches_sidecar": true,
+  "optimizer_step_values": [
+    85916
+  ],
+  "scheduler_last_epoch": 85916,
+  "scheduler_step_count": 85917,
+  "optimizer_steps_per_sidecar_epoch": [
+    1828.0
+  ],
+  "training_batches_per_epoch_reconstructed_from_current_profile": 1828,
+  "optimizer_steps_match_47_complete_profile_epochs": true,
+  "cache_manifest_hash_recomputed": "e87bafa2a85328b07751970595ee4026156815d4cdfb11bc391606bbf41b386c",
+  "cache_manifest_hash_matches_checkpoint": true,
+  "history": {
+    "first_epoch": 1,
+    "last_epoch": 44,
+    "n_epochs": 44,
+    "best_epoch": 36,
+    "best_val_ci": 0.8578301556363558,
+    "best_val_rmse": 0.4814130164168698,
+    "resumed_from": null,
+    "contains_checkpoint_epoch": false
+  },
+  "limits": [
+    "The safetensors file contains no embedded epoch, config, training-history, or validation metadata.",
+    "Optimizer metadata corroborates the sidecar, but the available history ends before epoch 47.",
+    "A matching prediction sample cannot recover the missing training continuation or prove checkpoint-selection history.",
+    "The original full resolved configuration is absent; its saved hash cannot be inverted."
+  ],
+  "fresh_ablation_cache_corroboration": {
+    "n_pairs": 5,
+    "cache": "results/cache/attention_ablation",
+    "maximum_absolute_prediction_difference": 9.536743181826068e-07,
+    "mean_absolute_prediction_difference": 3.8146972691777137e-07,
+    "base_vs_ablation_embedding_maximum_absolute_differences": [
+      0.01708984375,
+      0.01611328125,
+      0.017578125,
+      0.01953125,
+      0.048828125
+    ],
+    "test_rows": [
+      5671,
+      3376,
+      3716,
+      1944,
+      1036
+    ],
+    "fresh_predictions": [
+      11.60997200012207,
+      10.252591133117676,
+      9.787551879882812,
+      10.090481758117676,
+      10.341620445251465
+    ],
+    "archived_predictions": [
+      11.609972953796388,
+      10.252591133117676,
+      9.787551879882812,
+      10.09048080444336,
+      10.341620445251465
+    ]
+  },
+  "fresh_inference": {
+    "selection": "24 evenly spaced distinct targets after sorting by length, sequence, and SMILES; one pair per target",
+    "n_pairs": 24,
+    "n_targets": 24,
+    "n_compounds": 24,
+    "protein_length_range": [
+      215,
+      4128
+    ],
+    "all_5913_archived_targets_match_reconstructed_sampler_order": true,
+    "torch_version": "2.9.1+cpu",
+    "torch_threads": 2,
+    "precision": "float32 CPU inference using archived bfloat16 ESM-C cache",
+    "batch_size": 1,
+    "seconds": 14.565792299999885,
+    "maximum_absolute_prediction_difference": 0.006805419921876776,
+    "mean_absolute_prediction_difference": 0.0015472968419393645,
+    "prediction_correlation": 0.9999989917176694,
+    "n_within_absolute_1e_minus_4": 0,
+    "n_within_absolute_1e_minus_3": 12,
+    "archived_outputs_exactly_on_denormalized_bfloat16_grid": 5913
+  },
+  "inputs_unchanged_after_audit": true,
+  "conclusion": "The checkpoint has a reproducible SHA256 identity and its optimizer metadata corroborates epoch 47. The earlier 44-epoch training summary cannot describe the full provenance of that checkpoint. Fresh predictions reproduce the saved evaluation within the numerical differences reported below; training chronology and original validation selection remain unrecoverable from the available records."
+}

@@ -887,21 +887,31 @@ def compute_structure_alignment_metrics(
     residue_contacts: np.ndarray,
     atom_contacts: np.ndarray,
 ) -> Dict[str, float]:
+    """Score aligned contact labels; single-class AUROC is undefined (NaN).
+
+    Callers must supply atom contacts in the model graph's atom order.
+    Top-k overlap uses k equal to the number of true contacts and is undefined
+    when no contacts exist.
+    """
     residue_scores = atom_to_residue.mean(axis=0)
     atom_scores = residue_to_atom.mean(axis=0)
-    num_contact_residues = max(1, int(residue_contacts.sum()))
+    num_contact_residues = int(residue_contacts.sum())
     top_residue_idx = np.argsort(residue_scores)[::-1][:num_contact_residues]
-    residue_topk_overlap = float(residue_contacts[top_residue_idx].sum()) / float(num_contact_residues)
-    atom_contact_count = max(1, int(atom_contacts.sum()))
+    residue_topk_overlap = (float(residue_contacts[top_residue_idx].sum()) / num_contact_residues
+                            if num_contact_residues else float("nan"))
+    atom_contact_count = int(atom_contacts.sum())
     top_atom_idx = np.argsort(atom_scores)[::-1][:atom_contact_count]
-    atom_topk_overlap = float(atom_contacts[top_atom_idx].sum()) / float(atom_contact_count)
+    atom_topk_overlap = (float(atom_contacts[top_atom_idx].sum()) / atom_contact_count
+                         if atom_contact_count else float("nan"))
     return {
         "atom_to_residue_contact_mass": float(atom_to_residue[:, residue_contacts == 1].sum() / max(atom_to_residue.sum(), 1e-9)),
         "residue_to_atom_contact_mass": float(residue_to_atom[residue_contacts == 1][:, atom_contacts == 1].sum() / max(residue_to_atom.sum(), 1e-9)),
         "residue_topk_overlap": residue_topk_overlap,
         "atom_topk_overlap": atom_topk_overlap,
-        "residue_contact_auroc": float(auroc(residue_contacts, residue_scores)),
-        "atom_contact_auroc": float(auroc(atom_contacts, atom_scores)),
+        "residue_contact_auroc": (float(auroc(residue_contacts, residue_scores))
+                                   if np.unique(residue_contacts).size == 2 else float("nan")),
+        "atom_contact_auroc": (float(auroc(atom_contacts, atom_scores))
+                                if np.unique(atom_contacts).size == 2 else float("nan")),
     }
 
 

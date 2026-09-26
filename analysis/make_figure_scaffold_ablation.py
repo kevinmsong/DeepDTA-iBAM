@@ -43,7 +43,7 @@ def main() -> None:
     df["label"] = df["model_name"].map(LABELS).fillna(df["model_name"])
     df = df.sort_values("CI_mean", ascending=False).reset_index(drop=True)
 
-    fig, ax = plt.subplots(figsize=(FULL_WIDTH * 0.72, 1.9))
+    fig, ax = plt.subplots(figsize=(6.4, 2.25))
     y = range(len(df))
     for i, row in df.iterrows():
         full = row["label"] == "DeepDTA-iBAM"

@@ -39,6 +39,7 @@ os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 import numpy as np
 import pandas as pd
 import torch
+from rdkit import Chem
 
 # Plotting (graceful fallback)
 try:
@@ -59,6 +60,7 @@ from training.inference import (
     predict_unlabeled,
 )
 from utils.metrics import auroc
+from utils.structure_alignment import ligand_mol_from_pdb, unique_graph_contact_vector
 
 # Import PDB parsing and attention utilities from the case studies module
 from case_studies_results_generation import (
@@ -384,6 +386,21 @@ def run_complex(
         print(f"  [skip] could not obtain SMILES for {ligand_resname}", flush=True)
         return None
 
+    # The graph follows SMILES traversal order, while PDB contacts follow
+    # HETATM order. Verify their chemical correspondence before inference.
+    graph_mol = Chem.MolFromSmiles(ligand_smiles)
+    if graph_mol is None:
+        raise ValueError(f"Invalid ligand SMILES for {pdb_id}")
+    bound_mol = ligand_mol_from_pdb(pdb_text, ligand_atoms)
+    pdb_atom_contacts = atom_contact_mask(
+        ligand_atoms, residues, cutoff=entry.get("contact_cutoff_angstrom", 4.5)
+    )
+    atom_contacts, atom_mappings = unique_graph_contact_vector(
+        graph_mol, bound_mol, pdb_atom_contacts
+    )
+    print(f"  atom mapping: {len(atom_mappings)} chemical isomorphisms, "
+          "one invariant contact-label vector", flush=True)
+
     # 4. Build isolated caches and run inference
     cache_tag = f"ibam_{pdb_id}_{ligand_resname}".lower()
     try:
@@ -421,7 +438,7 @@ def run_complex(
         return None
 
     # Trim to actual sequence length (attention map may be padded)
-    n_atoms = len(ligand_atoms)
+    n_atoms = graph_mol.GetNumAtoms()
     n_residues = len(residues)
     atom_to_residue = atom_to_residue[:n_atoms, :n_residues]
     residue_to_atom = residue_to_atom[:n_residues, :n_atoms]
@@ -429,9 +446,6 @@ def run_complex(
     # 6. Contact masks
     residue_contacts = residue_contact_mask(
         residues, ligand_atoms, cutoff=entry.get("contact_cutoff_angstrom", 4.5)
-    )
-    atom_contacts = atom_contact_mask(
-        ligand_atoms, residues, cutoff=entry.get("contact_cutoff_angstrom", 4.5)
     )
     n_contact_residues = int(residue_contacts.sum())
     n_contact_atoms = int(atom_contacts.sum())
@@ -469,7 +483,7 @@ def run_complex(
         f"{r['aa']}{r['position']}" for r in residues
     ]
     atom_labels = [
-        f"{a.get('element', 'X')}{i+1}" for i, a in enumerate(ligand_atoms)
+        f"{atom.GetSymbol()}{i+1}" for i, atom in enumerate(graph_mol.GetAtoms())
     ]
     figs_dir.mkdir(parents=True, exist_ok=True)
     try:
@@ -488,6 +502,8 @@ def run_complex(
         "n_atoms": n_atoms,
         "n_contact_residues": n_contact_residues,
         "n_contact_atoms": n_contact_atoms,
+        "atom_contact_mapping_count": len(atom_mappings),
+        "atom_contact_label_vector_count": 1,
     }
     result.update(metrics)
     return result
@@ -546,7 +562,7 @@ def main() -> None:
     # Write CSV
     csv_path = results_dir / "interpretability_benchmark.csv"
     df = pd.DataFrame(all_results)
-    df.to_csv(csv_path, index=False, float_format="%.6f")
+    df.to_csv(csv_path, index=False, float_format="%.6f", na_rep="NA")
     print(f"\n[out] {csv_path}", flush=True)
 
     # Summary boxplot

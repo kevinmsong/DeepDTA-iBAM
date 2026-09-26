@@ -14,12 +14,12 @@ Panels
     defined in the System Architecture section, before any averaging.
 (b) The per-residue profile for the same complex, which is the matrix averaged
     down its atom axis, with crystallographic contacts marked.
-(c) The same profile for 4WKQ (EGFR with erlotinib), a type I complex whose
+(c) The same profile for 4WKQ (EGFR with gefitinib), a type I complex whose
     contact AUROC interval includes chance.
 
-Panel (c) is not decoration.  Attention localizes in two of the five co-crystal
-complexes, both type II, and a figure showing only the successful case would
-misrepresent that.
+Attention localizes in two of the five co-crystal complexes; showing only the
+successful case would misrepresent that variation. The former explanation in
+terms of binding mode was withdrawn because structural labels were unverified.
 
 Sources
 -------
@@ -58,7 +58,7 @@ from figure_style import (COLORS, FULL_WIDTH, SEQUENTIAL, apply_style,  # noqa: 
                           check_min_font, save)
 
 MAIN = "2HYY"        # ABL1 + imatinib, type II, contact AUROC 0.709
-FOIL = "4WKQ"        # EGFR + erlotinib, type I, interval includes chance
+FOIL = "4WKQ"        # EGFR + gefitinib, interval includes chance
 PAD = 12             # residues of context either side of the contact window
 
 
@@ -158,7 +158,7 @@ def main() -> None:
     ax_map.grid(False)          # the shared style's grid would overlay the map
     ax_map.set_xlabel("Protein residue")
     ax_map.set_ylabel("Ligand graph atom")
-    ax_map.set_title(f"(a) {str(m['protein'])} + imatinib: the interaction map",
+    ax_map.set_title(f"(a) {str(m['protein'])} + imatinib: attention matrix",
                      fontsize=7.5)
 
     # Label a readable subset of residues, and mark the contacts beneath.
@@ -182,11 +182,11 @@ def main() -> None:
 
     # --- (b) and (c) the profiles -----------------------------------------
     profile_panel(ax_b, prof_main, lo, hi,
-                  f"(b) Same complex, averaged over atoms: AUROC {a_main:.3f}",
+                  f"(b) ABL1 atom-averaged profile: AUROC {a_main:.3f}",
                   show_ylabel=True)
     lo_f, hi_f = contact_window(prof_foil.contact.values.astype(bool))
     profile_panel(ax_c, prof_foil, lo_f, hi_f,
-                  f"(c) EGFR + erlotinib, type I: AUROC {a_foil:.3f}, at chance",
+                  f"(c) EGFR + gefitinib: AUROC {a_foil:.3f}",
                   show_ylabel=True)
 
     small = check_min_font(fig)

@@ -1,8 +1,8 @@
 """Prepare the EGFR (4WKQ) receptor and search box for AutoDock Vina.
 
 Splits the cached 4WKQ co-crystal into a protein-only receptor and the
-crystallographic erlotinib ligand (residue IRE), converts the receptor to
-PDBQT with Open Babel, and writes the search box centred on the ligand
+crystallographic gefitinib ligand (residue IRE), converts the receptor to
+PDBQT with Open Babel, and writes the search box centered on the ligand
 centroid.
 
 Run from anywhere:  python analysis/prep_docking_receptor.py

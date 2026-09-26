@@ -1,24 +1,32 @@
 """
 Build the in-domain, assay-defined EGFR retrieval panel from DUD-E.
 
-Why not the local ZINC archive. The first attempt at this panel matched decoys
-from the repository's own lead-like ZINC tranches. That archive spans roughly
-207 to 320 Da at low lipophilicity, whereas the 6,060 ChEMBL EGFR actives
-average 507 Da and cLogP 4.9, so only 1 active fell inside the pool's property
-envelope. Matching regardless would have paired 507 Da actives with 253 Da
-decoys and let molecular weight alone carry the ranking, which is the property
-confound that DUD-E and LIT-PCBA exist to prevent. We therefore use DUD-E's
-own EGFR target, whose decoys are property-matched to its actives by
-construction.
+Why use DUD-E. Recalculation from the saved exploratory files gives 6,060 ChEMBL
+EGFR actives with mean molecular weight 506.0 Da and cLogP 4.774, compared with
+253.6 Da and 0.013 for the 60,000-compound local ZINC pool. The pool spans
+199.2 to 438.3 Da and cLogP -1.736 to 1.118. Eight actives fall within its
+six-descriptor minimum-to-maximum envelope. The archived matched panel contains
+one active and ten decoys, but the retained files do not establish its original
+matching criteria. These observations document a substantial property mismatch;
+the one retained active is not the count inside the broad property envelope.
+
+The 6,060-row exploratory file is distinct from the raw-cache consolidation
+analysis: the latter contains 5,976 potent molecule IDs, collapsing to 5,942
+parent IDs. The exploratory file has 84 additional molecule IDs, of which 73
+are absent from the raw cache and 11 have raw-cache potency below the cutoff.
+These facts reconcile the count arithmetic, but do not establish a historical
+query change, database release, or retrieval date. The audit and input hashes
+are in results/egfr_curation_revalidated.json.
 
 What this panel does and does not fix. Its actives are defined by assay
-outcome, not by similarity to a reference ligand, so it is free of the
-selection-rule circularity diagnosed in the main text and a fingerprint
-baseline is an admissible comparator on it. It is also in domain: EGFR is a
+outcome, without the family panel's reference-ligand similarity cutoff. It is
+also in domain: EGFR is a
 kinase, so unlike the H1 panel it tests the model on the target family it was
 trained for. It does not, however, escape the separate and well documented
-DUD-E decoy bias: DUD-E requires decoys to be topologically dissimilar to
-actives, which advantages any fingerprint method. We therefore report the same
+DUD-E decoy bias: DUD-E selects topologically dissimilar decoys, which can favor
+fingerprint methods. Its fingerprint scores are descriptive comparisons on this
+selected panel, not evidence of an unbiased ranking. Decoys are presumed
+inactive rather than experimentally confirmed inactive compounds. We report the same
 class-conditional similarity diagnostic used on the circular panel, so the
 reader can see how much separation this construction carries.
 
@@ -26,7 +34,7 @@ Outputs
   results/dude_egfr_panel.csv
   results/dude_egfr_panel_diagnostic.json
 
-Run from the submission directory:  python build_dude_egfr_panel.py
+Run from anywhere:  python analysis/build_dude_egfr_panel.py
 """
 
 from __future__ import annotations

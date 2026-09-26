@@ -1,10 +1,14 @@
 """
 Power calculation for the structural-localization panel.
 
-The manuscript asserts that "roughly 25 to 30 complexes would be needed to
-separate an AUROC of 0.585 from 0.5 at 80% power".  This module derives that
-number from the observed panel so a reader can check it, and reports the
-sample sizes required for the binding-mode-stratified design as well.
+The current manuscript reports a conditional requirement of 18 to 21 complexes
+to distinguish AUROC 0.585 from 0.5 at 80% power. This script derives the panel
+calculation from the observed variance components.
+
+The additional binding-mode-stratified arithmetic is historical and withdrawn:
+its 0.2013 contrast uses an unsupported type II assignment for 4RJ3, a CDK2
+complex previously mislabeled VEGFR2. Those fields and printed values must not
+be interpreted as a biologically supported design recommendation.
 
 Design being powered
 --------------------
@@ -28,8 +32,10 @@ independent prior.
 
 Because tau^2 is estimated on 4 degrees of freedom it is itself very
 imprecise, which is why the requirement is quoted as a range rather than a
-single integer.  The range reported below spans the requirement computed from
-the DerSimonian--Laird tau^2 and from the naive complex-level variance.
+single integer. The range spans the DerSimonian--Laird and naive complex-level
+variance estimates and the normal and noncentral-t approximations. It does not
+incorporate uncertainty in those estimated effects or variances. The five
+complexes include two CDK2 structures, so target-level independence is limited.
 
 Outputs
 -------
@@ -145,9 +151,8 @@ def main():
     k_lo = min(ceil(k_re), ceil(k_naive))
     k_hi = max(k_re_t, k_naive_t)
 
-    # Stratified design: the binding-mode contrast needs each stratum powered
-    # for a difference between two group means, doubling the variance.
-    delta_mode = 0.2013                  # observed type II minus type I
+    # Archived arithmetic only: this contrast depends on withdrawn mode labels.
+    delta_mode = 0.2013                  # historical, unsupported contrast
     k_per_stratum = required_k(delta_mode, 2 * var_re)
 
     # Grid for the table.
@@ -175,6 +180,7 @@ def main():
                    k_random_effects=k_re, k_naive=k_naive,
                    k_random_effects_t=k_re_t, k_naive_t=k_naive_t,
                    k_range=[k_lo, k_hi],
+                   stratified_status="archived_withdrawn_unverified_binding_mode_labels",
                    delta_binding_mode=delta_mode,
                    k_per_stratum=k_per_stratum,
                    stratified={f"{d:.3f}": [ceil(required_k(d, 2 * var_re)),
@@ -199,13 +205,13 @@ def main():
     print(f"\n  power of the actual panel (k = 5): "
           f"{attained_power(5, effect, var_re):.2f} (normal), "
           f"{attained_power_t(5, effect, var_re):.2f} (t)")
-    print("\nSTRATIFIED (type I vs type II) DESIGN, per stratum")
-    print("  the observed 0.201 gap is a post hoc selected difference and is")
-    print("  upward biased, so it gives a floor rather than a design target")
+    print("\nARCHIVED STRATIFIED ARITHMETIC, per stratum (withdrawn)")
+    print("  The historical 0.201 gap uses unsupported binding-mode labels.")
+    print("  These values are not validated biological design recommendations.")
     for delta in [delta_mode, 0.15, 0.10, 0.05]:
         kk = required_k(delta, 2 * var_re)
         kk_t = required_k_t(delta, 2 * var_re)
-        tag = " (observed)" if delta == delta_mode else ""
+        tag = " (archived)" if delta == delta_mode else ""
         print(f"  delta = {delta:.3f}{tag:11s}  k = {ceil(kk)} to {kk_t} per stratum")
 
 
