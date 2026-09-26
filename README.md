@@ -153,6 +153,7 @@ python analysis/audit_generated_set.py           # analog-set audit and scaffold
 python analysis/make_figures_ieee.py             # six main-text figures, 600 dpi PDF + PNG
 python analysis/make_figure_ibam_map.py          # the interaction-map figure
 python analysis/make_figure_generation.py        # the analog-generation figure
+python analysis/make_figure_residuals.py         # supplementary residual diagnostics
 python analysis/make_figure_scaffold_ablation.py # the supplementary ablation figure
 python analysis/check_colorblind.py              # color-vision-deficiency and greyscale audit
 python analysis/verify_manuscript_numbers.py     # every headline value against its artifact

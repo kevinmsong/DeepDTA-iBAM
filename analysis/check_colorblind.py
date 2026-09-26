@@ -29,7 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 FIGURES = ["fig_architecture", "fig_localization_forest", "fig_benchmark_validity",
            "fig_efficiency", "fig_interaction_content", "fig_docking",
-           "fig_ibam_map", "fig_generation"]
+           "fig_ibam_map", "fig_generation", "fig_residual_diagnostics"]
 
 # sRGB -> LMS (Hunt-Pointer-Estevez, D65 normalised)
 RGB2LMS = np.array([[0.31399022, 0.63951294, 0.04649755],
@@ -136,6 +136,7 @@ def main() -> None:
         "fig_docking": (["primary", "secondary", "tertiary"], "line style"),
         "fig_ibam_map": (["secondary", "grey"], "marker shape"),
         "fig_generation": (["primary", "secondary", "tertiary"], "marker shape + hatch"),
+        "fig_residual_diagnostics": (["secondary", "dark"], "line style"),
     }
     print("\n=== per-figure colour separation ===")
     worst_fig = (1e9, "", "", "", "")
