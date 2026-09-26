@@ -114,6 +114,26 @@ def main() -> None:
             v = f"{sc['slope_ms_per_unit']:.3f}"
             checks.append(("ms per residue", v, True, v in tex))
 
+    # --- analog generation ------------------------------------------------
+    # The median similarity to the seed per generator, which the Local Design
+    # section quotes and Fig. 7a plots, comes straight from the released
+    # per-molecule table rather than from a summary JSON.
+    gen = ROOT / "results" / "generation_comparison.csv"
+    if gen.exists():
+        import csv as _csv
+        rows = list(_csv.DictReader(gen.open(encoding="utf-8")))
+        for key, label in [("diffusion", "diffusion"),
+                           ("fragment_swap", "fragment swap"),
+                           ("random_edit", "random edit")]:
+            vals = sorted(float(r["tanimoto"]) for r in rows
+                          if r["generator"] == key)
+            if not vals:
+                continue
+            mid = len(vals) // 2
+            med = vals[mid] if len(vals) % 2 else (vals[mid - 1] + vals[mid]) / 2
+            v = f"{med:.2f}"
+            checks.append((f"{label} median Tanimoto", v, True, v in tex))
+
     # --- assay-type sensitivity ------------------------------------------
     ah = load_json("assay_type_hierarchy_summary.json")
     if ah and ah.get("status") == "ok":
