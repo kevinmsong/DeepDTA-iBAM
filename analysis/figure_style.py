@@ -61,6 +61,13 @@ COLORS = {
 CYCLE = [COLORS["primary"], COLORS["secondary"], COLORS["tertiary"],
          COLORS["quaternary"], COLORS["accent"], COLORS["muted"]]
 
+# Sequential colormap for the one heatmap in the paper.  Cividis is
+# perceptually uniform and was constructed so that a viewer with deuteranomaly
+# sees very nearly what a viewer with normal colour vision sees, and it rises
+# monotonically in lightness, so it also survives greyscale printing.  Verified
+# by analysis/check_colorblind.py.
+SEQUENTIAL = "cividis"
+
 # Redundant encoding channels, so a figure survives greyscale printing.
 MARKERS = ["o", "s", "^", "D", "v", "P"]
 LINESTYLES = ["-", "--", "-.", ":", (0, (3, 1, 1, 1)), (0, (5, 1))]

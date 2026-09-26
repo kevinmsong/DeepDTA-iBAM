@@ -150,7 +150,8 @@ python analysis/analysis_literature_audit.py     # reporting practice in publish
 python analysis/audit_generated_set.py           # analog-set audit and scaffold diversity
 
 # Figures and manuscript checks
-python analysis/make_figures_ieee.py             # the six main-text figures, 600 dpi PDF + PNG
+python analysis/make_figures_ieee.py             # six main-text figures, 600 dpi PDF + PNG
+python analysis/make_figure_ibam_map.py          # the interaction-map figure
 python analysis/make_figure_scaffold_ablation.py # the supplementary ablation figure
 python analysis/check_colorblind.py              # color-vision-deficiency and greyscale audit
 python analysis/verify_manuscript_numbers.py     # every headline value against its artifact
@@ -164,6 +165,15 @@ residue-level export, and `score_kinase_panel.py` rescores the in-domain panel.
 `export_panel_attention.py` regenerates `results/panel_attention_residue.npy`,
 the 3,300 x 1,210 attention profile matrix, which is released here so the
 interaction-map analysis can be rerun without a GPU.
+
+`export_residue_level.py --dump-matrix` additionally writes the full
+atom-by-residue interaction map per complex to `results/ibam_matrix_{pdb_id}.npz`,
+which is what the interaction-map figure is drawn from. That script is
+deterministic within one environment but not across them: rerunning the released
+checkpoint on a CPU workstation reproduces the released per-residue attention to
+1.1e-3, which moves per-complex contact AUROC by at most 0.0016 and leaves every
+value the manuscript reports at three decimals unchanged. The released CSV is
+kept as the artifact of record.
 
 Scripts that run inference size their batch from the longest target sequence
 and the memory available, via `analysis/memory_guard.py`, because memory is

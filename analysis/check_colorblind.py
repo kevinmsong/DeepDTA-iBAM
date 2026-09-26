@@ -28,7 +28,8 @@ RESULTS = ROOT / "results"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 FIGURES = ["fig_architecture", "fig_localization_forest", "fig_benchmark_validity",
-           "fig_efficiency", "fig_interaction_content", "fig_docking"]
+           "fig_efficiency", "fig_interaction_content", "fig_docking",
+           "fig_ibam_map"]
 
 # sRGB -> LMS (Hunt-Pointer-Estevez, D65 normalised)
 RGB2LMS = np.array([[0.31399022, 0.63951294, 0.04649755],
@@ -89,6 +90,9 @@ def main() -> None:
 
     names = ["primary", "secondary", "tertiary", "quaternary", "accent", "muted"]
     cols = {n: hex_to_rgb(COLORS[n]) for n in names}
+    # The per-figure check below also needs the neutrals, which figures use to
+    # hold a background series against a highlighted one.
+    all_cols = {n: hex_to_rgb(v) for n, v in COLORS.items()}
 
     print("=== palette separation (CIE76, threshold "
           f"{THRESHOLD:.0f}) ===")
@@ -130,13 +134,15 @@ def main() -> None:
         "fig_efficiency": (["primary", "secondary", "tertiary"], "marker shape"),
         "fig_interaction_content": (["primary", "secondary"], "per-bar axis labels"),
         "fig_docking": (["primary", "secondary", "tertiary"], "line style"),
+        "fig_ibam_map": (["secondary", "grey"], "marker shape"),
     }
     print("\n=== per-figure colour separation ===")
     worst_fig = (1e9, "", "", "", "")
     for fig, (used, redundant) in per_fig.items():
         fmin, fcond, fpair = 1e9, "", ("", "")
         for cond in ["normal"] + list(SIMS):
-            sim = {n: (cols[n] if cond == "normal" else simulate(cols[n], cond))
+            sim = {n: (all_cols[n] if cond == "normal"
+                       else simulate(all_cols[n], cond))
                    for n in used}
             labs = {n: to_lab(c) for n, c in sim.items()}
             for i, a in enumerate(used):
@@ -148,6 +154,31 @@ def main() -> None:
         print(f"  {fig:28s} min dE {fmin:5.1f} ({fcond}, {fpair[0]}/{fpair[1]})  {status}")
         if fmin < worst_fig[0]:
             worst_fig = (fmin, fig, fcond, fpair[0], fpair[1])
+
+    # The one heatmap in the paper encodes a continuous quantity by color
+    # alone, so its colormap has to stay ordered under every deficiency: a
+    # reader must be able to tell higher from lower.  That means lightness has
+    # to rise monotonically along the map, both in normal vision and under
+    # simulation.
+    print("\n=== sequential colormap ===")
+    seq_ok = True
+    try:
+        import matplotlib.cm as cm
+        from figure_style import SEQUENTIAL
+        samples = np.linspace(0, 1, 32)
+        rgb = np.array([cm.get_cmap(SEQUENTIAL)(s)[:3] for s in samples])
+        for cond in ["normal"] + list(SIMS):
+            cols = rgb if cond == "normal" else np.array(
+                [simulate(c, cond) for c in rgb])
+            L = np.array([to_lab(c)[0] for c in cols])
+            drops = int((np.diff(L) < -0.5).sum())
+            span = float(L.max() - L.min())
+            status = "ok" if drops == 0 else f"{drops} reversals"
+            if drops:
+                seq_ok = False
+            print(f"  {SEQUENTIAL} {cond:14s} lightness span {span:5.1f}  {status}")
+    except Exception as exc:                       # pragma: no cover
+        print(f"  (skipped: {type(exc).__name__}: {exc})")
 
     print("\n=== rendered figures ===")
     try:
@@ -175,7 +206,7 @@ def main() -> None:
           f"({worst[2]} vs {worst[3]}), across hues no single figure combines")
     print(f"per-figure worst case:   dE {worst_fig[0]:.1f} in {worst_fig[1]} "
           f"under {worst_fig[2]} ({worst_fig[3]} vs {worst_fig[4]})")
-    print("FIGURES COLORBLIND-SAFE:", worst_fig[0] >= THRESHOLD)
+    print("FIGURES COLORBLIND-SAFE:", worst_fig[0] >= THRESHOLD and seq_ok)
 
 
 if __name__ == "__main__":

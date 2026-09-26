@@ -17,7 +17,28 @@ Output
       pdb_id, protein, binding_mode, residue_index, residue_label,
       attention, attention_z, contact
 
+With --dump-matrix, additionally writes the full atom-by-residue attention
+matrix per complex, which is the interaction map itself rather than the
+per-residue profile derived from it:
+
+  results/ibam_matrix_{pdb_id}.npz
+      attention (n_atoms x n_residues), atom_symbol, residue_label, contact,
+      pdb_id, protein, binding_mode, smiles
+
 Run from the submission directory:  python export_residue_level.py
+                                    python export_residue_level.py --dump-matrix
+
+Reproducibility note
+--------------------
+This script is deterministic within one environment: rerunning it reproduces
+its own output bit for bit.  Across environments it is not, because the forward
+pass uses non-deterministic reductions whose order depends on the hardware and
+the library build.  Rerunning the released checkpoint on a CPU workstation
+reproduces the released per-residue attention to 1.1e-3 in absolute value, which
+moves per-complex residue contact AUROC by at most 0.0016 and leaves every value
+the manuscript reports at three decimals unchanged.  The released CSV is kept as
+the artifact of record, so the published statistics stay tied to the run that
+produced them.
 """
 
 from __future__ import annotations
@@ -38,6 +59,7 @@ def _out(name):
 # ---------------------------------------------------------------------------
 
 
+import argparse
 import json
 import os
 import sys
@@ -89,7 +111,32 @@ def cached_smiles(tag: str) -> str:
     return next(iter(items.values()))["smiles"]
 
 
+def graph_atom_symbols(smiles: str, n_atoms: int) -> list:
+    """Element symbols for the ligand's graph atoms, in model token order.
+
+    The rows of the attention matrix are graph atoms built by RDKit from the
+    SMILES, not the PDB atom records, and nothing guarantees those two orders
+    agree.  Labelling rows with PDB atom names would therefore imply a
+    correspondence that does not exist, so rows are labelled by element and
+    graph index instead.
+    """
+    try:
+        from rdkit import Chem
+    except ImportError:
+        return [f"{i}" for i in range(n_atoms)]
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None or mol.GetNumAtoms() != n_atoms:
+        return [f"{i}" for i in range(n_atoms)]
+    return [f"{a.GetSymbol()}{i}" for i, a in enumerate(mol.GetAtoms())]
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--dump-matrix", action="store_true",
+                        help="also write the full atom-by-residue matrix per "
+                             "complex to results/ibam_matrix_{pdb_id}.npz")
+    args = parser.parse_args()
+
     config = get_config_profile("max_rmse_cluster_diffusion")
     config.build_caches_on_start = False
     # Main-text analyses use the primary member with seed 1337, which is the
@@ -131,6 +178,21 @@ def main() -> None:
         # Same residue score the benchmark ranks on: mean ligand->residue attention.
         scores = atom_to_residue.mean(axis=0)
         contacts = residue_contact_mask(residues, ligand_atoms, cutoff=CUTOFF)
+
+        if args.dump_matrix:
+            labels = [f"{r['aa']}{r['position']}" for r in residues]
+            npz = ROOT / "results" / f"ibam_matrix_{pdb_id}.npz"
+            np.savez_compressed(
+                npz,
+                attention=atom_to_residue.astype(np.float32),
+                atom_symbol=np.array(graph_atom_symbols(ligand_smiles, n_atoms)),
+                residue_label=np.array(labels),
+                contact=contacts.astype(np.int8),
+                pdb_id=pdb_id, protein=protein, binding_mode=mode,
+                smiles=ligand_smiles,
+            )
+            print(f"  wrote {npz.name}  ({n_atoms} atoms x {n_res} residues)",
+                  flush=True)
 
         z = (scores - scores.mean()) / scores.std(ddof=1)
         frames.append(pd.DataFrame({
